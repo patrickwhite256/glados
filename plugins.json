@@ -1,8 +1,5 @@
 {
     "what_is": {
-        "plugin_class":"WhatIs",
-        "deps":[
-            "Item"
-        ]
+        "plugin_class":"WhatIs"
     }
 }

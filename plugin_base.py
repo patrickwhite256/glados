@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+from sqlalchemy.ext.declarative import declarative_base
+
+DeclarativeBase = declarative_base()
+
+
 class GladosPluginBase(object):
     consumes_message = False  # set true if the event should not continue propogating
 
