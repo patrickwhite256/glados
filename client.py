@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import json
-import re
 from importlib import import_module
 
 import requests
@@ -40,33 +39,12 @@ class GladosClient(WebSocketClient):
                 plugin.handle_message(msg)
                 if plugin.consumes_message:
                     return
-        if msg['type'] == 'message' and 'message' not in msg:
-            self.handle_message(msg['text'], msg['channel'])
 
     def closed(self, code, reason=None):
         self.session.commit()
         for plugin in self.plugins:
             plugin.teardown()
         print('You monster')
-
-    def handle_message(self, text, channel):
-        if re.match(r'^glados.*alive', text, flags=re.I):
-            msg = {
-                'id': 1,
-                'type': 'message',
-                'text': 'I am still alive',
-                'channel': channel
-            }
-            self.send(json.dumps(msg))
-        if re.match(r'This[^\w]+sentence[^\w]+is[^\w+]false', text, re.I):
-            msg = {
-                'id': 2,
-                'type': 'message',
-                'text': 'You monster',
-                'channel': channel
-            }
-            self.send(json.dumps(msg))
-            raise Exception
 
     def init_memory(self):
         engine = sqlalchemy.create_engine('sqlite:///memory.db')

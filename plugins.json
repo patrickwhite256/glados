@@ -1,5 +1,8 @@
 {
     "what_is": {
         "plugin_class":"WhatIs"
+    },
+    "alive": {
+        "plugin_class":"IAmAlive"
     }
 }
