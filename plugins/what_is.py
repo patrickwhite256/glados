@@ -33,7 +33,7 @@ class WhatIs(GladosPluginBase):
                 item = Item(name=name, alias=alias)
                 self.db_session.add(item)
             else:
-                item.name = name
+                item.alias = alias
             msg = {
                 'id': 3,
                 'type': 'message',
