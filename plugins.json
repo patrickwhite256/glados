@@ -4,5 +4,8 @@
     },
     "alive": {
         "plugin_class":"IAmAlive"
+    },
+    "hipster": {
+        "plugin_class":"BeHipster"
     }
 }
