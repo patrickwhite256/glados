@@ -1,18 +1,24 @@
 #!/usr/bin/env python
 
-import multiprocessing
 import signal
+import sys
 
 from client import GladosClient
 
 gclient = None
 
+
 def stop(signum, frame):
     gclient.close()
 
-signal.signal(signal.SIGTERM, stop)
-
 if __name__ == '__main__':
-    gclient = GladosClient()
+    signal.signal(signal.SIGTERM, stop)
+    try:
+        token_file = open('.slack-token')
+        token = token_file.read().strip()
+    except:
+        print('Could not find slack token file .slack-token')
+        sys.exit(1)
+    gclient = GladosClient(token)
     gclient.connect()
     gclient.run_forever()

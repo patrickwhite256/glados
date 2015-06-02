@@ -10,14 +10,13 @@ from ws4py.client.threadedclient import WebSocketClient
 
 from plugin_base import DeclarativeBase as Base
 
-SLACK_TOKEN = 'xoxb-5066460429-rINCEJaI40B297uZA2kVCs8L'
-SLACK_RTM_START_URL = 'https://slack.com/api/rtm.start?token={}'.format(SLACK_TOKEN)
+SLACK_RTM_START_URL = 'https://slack.com/api/rtm.start?token={}'
 PLUGINS_FILENAME = 'plugins.json'
 
 
 class GladosClient(WebSocketClient):
-    def __init__(self, **kwargs):
-        wsdata = requests.get(SLACK_RTM_START_URL).json()
+    def __init__(self, slack_token, **kwargs):
+        wsdata = requests.get(SLACK_RTM_START_URL.format(slack_token)).json()
         url = wsdata['url']
         self.plugin_classes = []
         self.plugins = []
@@ -82,7 +81,9 @@ class GladosClient(WebSocketClient):
 # For debugging
 if __name__ == '__main__':
     try:
-        ws = GladosClient()
+        token_file = open('.slack-token')
+        token = token_file.read().strip()
+        ws = GladosClient(token)
         ws.connect()
         ws.run_forever()
     except KeyboardInterrupt:
