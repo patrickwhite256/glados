@@ -15,6 +15,8 @@ PLUGINS_FILENAME = 'plugins.json'
 
 
 class GladosClient(WebSocketClient):
+    debug = False
+
     def __init__(self, slack_token, **kwargs):
         wsdata = requests.get(SLACK_RTM_START_URL.format(slack_token)).json()
         url = wsdata['url']
@@ -26,10 +28,12 @@ class GladosClient(WebSocketClient):
         return super().__init__(url, **kwargs)
 
     def opened(self):
-        print('Hello!')
+        if self.debug:
+            print('Hello!')
 
     def received_message(self, m):
-        print(m)
+        if self.debug:
+            print(m)
         msg = json.loads(str(m))
         if 'ok' in msg:
             return
@@ -43,7 +47,8 @@ class GladosClient(WebSocketClient):
         self.session.commit()
         for plugin in self.plugins:
             plugin.teardown()
-        print('You monster')
+        if self.debug:
+            print('You monster')
 
     def init_memory(self):
         engine = sqlalchemy.create_engine('sqlite:///memory.db')
@@ -84,6 +89,7 @@ if __name__ == '__main__':
         token_file = open('.slack-token')
         token = token_file.read().strip()
         ws = GladosClient(token)
+        ws.debug = True
         ws.connect()
         ws.run_forever()
     except KeyboardInterrupt:
