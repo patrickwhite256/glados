@@ -11,6 +11,7 @@ from ws4py.client.threadedclient import WebSocketClient
 from plugin_base import DeclarativeBase as Base
 
 SLACK_RTM_START_URL = 'https://slack.com/api/rtm.start?token={}'
+SLACK_POST_MESSAGE_URL = 'https://slack.com/api/chat.postMessage'
 PLUGINS_FILENAME = 'plugins.json'
 
 
@@ -18,6 +19,7 @@ class GladosClient(WebSocketClient):
     debug = False
 
     def __init__(self, slack_token, **kwargs):
+        self.token = slack_token
         wsdata = requests.get(SLACK_RTM_START_URL.format(slack_token)).json()
         url = wsdata['url']
         self.plugin_classes = []
@@ -32,8 +34,10 @@ class GladosClient(WebSocketClient):
             print('Hello!')
 
     def received_message(self, m):
+        # TODO: ignore messages from bots to prevent loops
         if self.debug:
             print(m)
+            # TODO: prevent debug runs from listening to any channel except the debug channel
         msg = json.loads(str(m))
         if 'ok' in msg:
             return
@@ -76,11 +80,23 @@ class GladosClient(WebSocketClient):
     def init_plugins(self):
         for plugin_class in self.plugin_classes:
             try:
-                self.plugins.append(plugin_class(self.session, self.send))
+                self.plugins.append(plugin_class(self.session, self.postMessage))
             except Exception as e:
                 print('Problem initializing plugin {}:\n{}'.format(plugin_class.__name__, e))
         for plugin in self.plugins:
             plugin.setup()
+
+    def postMessage(self, message, channel, attachments=None):
+        # TODO: add default channel
+        data = {
+            'token': self.token,
+            'channel': channel,
+            'text': message,
+            'as_user': True
+        }
+        if attachments is not None:
+            data['attachments'] = json.dumps(attachments)
+        requests.post(SLACK_POST_MESSAGE_URL, data=data)
 
 
 # For debugging

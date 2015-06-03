@@ -9,6 +9,9 @@ A plugin consists of a python class based on GladosPluginBase.
 It lives in the `plugins/` directory. You can do just about anything you want with plugins.
 Each plugin is given a shared SQLAlchemy session (currently SQLite, will change "soon").
 Each plugin is also given access to the client's `send` function. For now, this just gives it the actual send function, but may implement queueing or some other fanciness later.
+The send function takes at least two arguments: the text to send and the channel to which to send it.
+It takes an optional third argument, an attachments array ([see official documentation](https://api.slack.com/docs/attachments)). This argument should be a python array of python dicts.
+The function will take care of converting it to JSON.
 Plugin methods that have a defined meaning are documented in `plugin_base.py`
 
 Plugins are configured in the `plugins.json` file. For now each plugin is only defined by the file name and the plugin class, but other things may be added in the future.

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import json
 import re
 
 import sqlalchemy
@@ -34,13 +33,8 @@ class WhatIs(GladosPluginBase):
                 self.db_session.add(item)
             else:
                 item.alias = alias
-            msg = {
-                'id': 3,
-                'type': 'message',
-                'text': 'I will remember that {} is {}'.format(name, alias),
-                'channel': msg['channel']
-            }
-            self.send(json.dumps(msg))
+            message_text = 'I will remember that {} is {}'.format(name, alias),
+            self.send(message_text, msg['channel'])
         if recall_match:
             item = self.db_session.query(Item).filter_by(name=recall_match.group(1)).first()
             msg = {
@@ -49,10 +43,10 @@ class WhatIs(GladosPluginBase):
                 'channel': msg['channel']
             }
             if item is None:
-                msg['text'] = '{0} is {0}'.format(recall_match.group(1))
+                message_text = '{0} is {0}'.format(recall_match.group(1))
             else:
-                msg['text'] = '{} is {}'.format(item.name, item.alias)
-            self.send(json.dumps(msg))
+                message_text = '{} is {}'.format(item.name, item.alias)
+            self.send(message_text, msg['channel'])
 
 
 class Item(Base):
