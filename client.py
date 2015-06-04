@@ -96,7 +96,6 @@ class GladosClient(WebSocketClient):
         }
         if attachments is not None:
             data['attachments'] = json.dumps(attachments)
-        print(data)
         requests.post(SLACK_POST_MESSAGE_URL, data=data)
 
 
