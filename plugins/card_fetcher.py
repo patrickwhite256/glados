@@ -30,10 +30,7 @@ class CardFetcher(GladosPluginBase):
 
             card_obj = get_card_obj(match)
 
-            print(match)
-
             if not card_obj:
-                print('Card not found')
                 self.send(CARD_NOT_FOUND_ERR_TPL.format(match), msg['channel'])
                 continue
 
