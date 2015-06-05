@@ -8,7 +8,7 @@
     "hipster": {
         "plugin_class":"BeHipster"
     },
-    "sun": {
-        "plugin_class":"HereComesTheSun"
+    "card_fetcher": {
+    	"plugin_class": "CardFetcher"
     }
 }
