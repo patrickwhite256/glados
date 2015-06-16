@@ -13,5 +13,8 @@
     },
     "karma": {
         "plugin_class": "Karmator"
+    },
+    "urban": {
+        "plugin_class": "UrbanMe"
     }
 }
