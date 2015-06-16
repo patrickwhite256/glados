@@ -13,15 +13,24 @@ from plugin_base import DeclarativeBase as Base
 SLACK_RTM_START_URL = 'https://slack.com/api/rtm.start?token={}'
 SLACK_POST_MESSAGE_URL = 'https://slack.com/api/chat.postMessage'
 PLUGINS_FILENAME = 'plugins.json'
+DEBUG_CHANNEL_NAME = 'aperture-science'  # TODO: move this to a configuration file
 
 
 class GladosClient(WebSocketClient):
     debug = False
+    bot_users = []
+    debug_channel = None
 
     def __init__(self, slack_token, **kwargs):
         self.token = slack_token
         wsdata = requests.get(SLACK_RTM_START_URL.format(slack_token)).json()
         url = wsdata['url']
+        for user in wsdata['users']:
+            if user['is_bot']:
+                self.bot_users.append(user['id'])
+        for channel in wsdata['channels']:
+            if channel['name'] == DEBUG_CHANNEL_NAME:
+                self.debug_channel = channel['id']
         self.plugin_classes = []
         self.plugins = []
         self.load_plugins()
@@ -34,11 +43,16 @@ class GladosClient(WebSocketClient):
             print('Hello!')
 
     def received_message(self, m):
-        # TODO: ignore messages from bots to prevent loops
+        msg = json.loads(str(m))
+        if 'user' in msg and msg['user'] in self.bot_users:
+            return
         if self.debug:
             print(m)
-            # TODO: prevent debug runs from listening to any channel except the debug channel
-        msg = json.loads(str(m))
+            if 'channel' in msg and msg['channel'] != self.debug_channel:
+                return
+        else:
+            if 'channel' in msg and msg['channel'] == self.debug_channel:
+                return
         if 'ok' in msg:
             return
         for plugin in self.plugins:
