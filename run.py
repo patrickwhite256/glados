@@ -52,7 +52,7 @@ if __name__ == '__main__':
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.bind(SOCKET_FILENAME)
     sock.listen(1)
-    gclient = GladosClient(token, debug=True)
+    gclient = GladosClient(token)
     socket_process = Process(target=handle_socket_connections, args=(gclient, sock))
     socket_process.start()
     gclient.connect()
