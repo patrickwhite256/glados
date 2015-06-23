@@ -1,20 +1,30 @@
 {
     "what_is": {
-        "plugin_class":"WhatIs"
+        "plugin_class":"WhatIs",
+        "plugin_type": "normal"
     },
     "alive": {
-        "plugin_class":"IAmAlive"
+        "plugin_class":"IAmAlive",
+        "plugin_type": "normal"
     },
     "hipster": {
-        "plugin_class":"BeHipster"
+        "plugin_class":"BeHipster",
+        "plugin_type": "normal"
     },
     "card_fetcher": {
-    	"plugin_class": "CardFetcher"
+        "plugin_class": "CardFetcher",
+        "plugin_type": "normal"
     },
     "karma": {
-        "plugin_class": "Karmator"
+        "plugin_class": "Karmator",
+        "plugin_type": "normal"
     },
     "urban": {
-        "plugin_class": "UrbanMe"
+        "plugin_class": "UrbanMe",
+        "plugin_type": "normal"
+    },
+    "pd_reminder": {
+        "plugin_class": "PDReminder",
+        "plugin_type": "async"
     }
 }

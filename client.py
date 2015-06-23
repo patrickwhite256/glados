@@ -20,8 +20,13 @@ class GladosClient(WebSocketClient):
     debug = False
     bot_users = []
     debug_channel = None
+    general_channel = None
+    async_plugins = {}
 
     def __init__(self, slack_token, **kwargs):
+        if kwargs.get('debug', False):
+            self.debug = True
+            del kwargs['debug']
         self.token = slack_token
         wsdata = requests.get(SLACK_RTM_START_URL.format(slack_token)).json()
         url = wsdata['url']
@@ -31,7 +36,12 @@ class GladosClient(WebSocketClient):
         for channel in wsdata['channels']:
             if channel['name'] == DEBUG_CHANNEL_NAME:
                 self.debug_channel = channel['id']
-        self.plugin_classes = []
+            if channel['is_general']:
+                self.general_channel = channel['id']
+        if self.debug:
+            self.general_channel = self.debug_channel
+
+        self.plugin_metadata = []
         self.plugins = []
         self.load_plugins()
         self.init_memory()
@@ -63,7 +73,7 @@ class GladosClient(WebSocketClient):
 
     def closed(self, code, reason=None):
         self.session.commit()
-        for plugin in self.plugins:
+        for plugin in self.plugins + list(self.async_plugins.values()):
             plugin.teardown()
         if self.debug:
             print('You monster')
@@ -86,21 +96,29 @@ class GladosClient(WebSocketClient):
         for module_name, class_dict in plugins_dict.items():
             try:
                 module = import_module('plugins.{}'.format(module_name))
-                plugin_class = getattr(module, class_dict['plugin_class'])
-                self.plugin_classes.append(plugin_class)
+                self.plugin_metadata.append({
+                    'name': class_dict['plugin_class'],
+                    'class': getattr(module, class_dict['plugin_class']),
+                    'type': class_dict['plugin_type']
+                })
             except ImportError as e:
                 print('Problem loading plugin {}:\n{}'.format(class_dict['plugin_class'], e))
 
     def init_plugins(self):
-        for plugin_class in self.plugin_classes:
+        for plugin_data in self.plugin_metadata:
+            plugin_class = plugin_data['class']
+            plugin_name = plugin_data['name']
             try:
-                self.plugins.append(plugin_class(self.session, self.postMessage))
+                if plugin_data['type'] == 'normal':
+                    self.plugins.append(plugin_class(self.session, self.post_message))
+                elif plugin_data['type'] == 'async':
+                    self.async_plugins[plugin_name] = plugin_class(self.session, self.post_general)
             except Exception as e:
                 print('Problem initializing plugin {}:\n{}'.format(plugin_class.__name__, e))
-        for plugin in self.plugins:
+        for plugin in self.plugins + list(self.async_plugins.values()):
             plugin.setup()
 
-    def postMessage(self, message, channel, attachments=None):
+    def post_message(self, message, channel, attachments=None):
         # TODO: add default channel
         data = {
             'token': self.token,
@@ -110,7 +128,15 @@ class GladosClient(WebSocketClient):
         }
         if attachments is not None:
             data['attachments'] = json.dumps(attachments)
-        requests.post(SLACK_POST_MESSAGE_URL, data=data)
+        response = requests.post(SLACK_POST_MESSAGE_URL, data=data)
+        if self.debug:
+            print(response)
+
+    def post_general(self, message):
+        self.post_message(message, self.general_channel)
+
+    def handle_async(self, plugin, data):
+        self.async_plugins[plugin].handle_message(data)
 
 
 # For debugging
@@ -118,8 +144,7 @@ if __name__ == '__main__':
     try:
         token_file = open('.slack-token')
         token = token_file.read().strip()
-        ws = GladosClient(token)
-        ws.debug = True
+        ws = GladosClient(token, debug=True)
         ws.connect()
         ws.run_forever()
     except KeyboardInterrupt:

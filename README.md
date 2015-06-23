@@ -16,6 +16,12 @@ Plugin methods that have a defined meaning are documented in `plugin_base.py`
 
 Plugins are configured in the `plugins.json` file. For now each plugin is only defined by the file name and the plugin class, but other things may be added in the future.
 
+New! Async plugins
+------------------
+Now available: async plugins that accept messages to a unix socket and generate messages based on what they receive.
+Example usage: reminder plugin that accepts messages from a cron job (see the PDreminder job).
+Currently only have the ability to send to the general channel.
+
 Developing
 ----------
 Get the token for your bot integration and dump it into `.slack-token`.
@@ -28,7 +34,6 @@ Please respect existing conventions within the code and in particular make sure 
 
 To-do
 -----
-- Add in signal hooks so GLaDOS can get events from other processes
 - Better error handling of crashing plugins
 - More restrictive sending of messages
 - Move away from SQLite
