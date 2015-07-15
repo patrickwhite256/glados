@@ -124,9 +124,11 @@ releasedAt          Date        : when the card was released
 
 
 def get_card_obj(cardname):
-    r = requests.get('http://api.mtgdb.info/cards/{}'.format(cardname.replace(':', '')))
+    cardname = re.sub(r'[\/:]', '', cardname)
 
-    if (not r.json()) or (r.status_code is not requests.codes.ok):
+    r = requests.get('http://api.mtgdb.info/cards/{}'.format(cardname))
+
+    if (r.status_code is not requests.codes.ok) or (not r.json()):
         return None
 
     return r.json()[0]
