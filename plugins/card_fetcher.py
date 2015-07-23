@@ -12,6 +12,8 @@ CARD_NOT_FOUND_ERR_TPL = 'Whoops, looks like {} isn\'t a magic card'
 cardimg_re = re.compile(r'.*?\[\[(.+?)\]\]')
 # {{cardname}} gets detailed card info as text
 oracle_re = re.compile(r'.*?{{(.+?)}}')
+# $$cardname$$ fetches the price of the card
+price_re = re.compile(r'.*?\$\$(.+?)\$\$')
 
 
 class CardFetcher(GladosPluginBase):
@@ -20,11 +22,12 @@ class CardFetcher(GladosPluginBase):
     def can_handle_message(self, msg):
         if msg['type'] != 'message' or 'message' in msg:
             return None
-        return cardimg_re.match(msg['text']) or oracle_re.match(msg['text'])
+        return cardimg_re.match(msg['text']) or oracle_re.match(msg['text']) or price_re.match(msg['text'])
 
     def handle_message(self, msg):
         cardimg_matches = cardimg_re.findall(msg['text'])
         oracle_matches = oracle_re.findall(msg['text'])
+        pricing_matches = price_re.findall(msg['text'])
 
         for match in cardimg_matches:
 
@@ -89,6 +92,13 @@ class CardFetcher(GladosPluginBase):
             attachments = [card_attachment]
             self.send('', msg['channel'], attachments)
 
+        for match in pricing_matches:
+
+            price = get_card_price(match)
+
+            self.send('CFB says the price of {} is {}'.format(match, price), msg['channel'], {})
+
+
 '''
 Query a web API for a card with the given name
 Implementation subject to change as various MTG APIs are created and destroyed
@@ -132,3 +142,17 @@ def get_card_obj(cardname):
     }
 
     return formattedJson
+
+
+def get_card_price(cardname):
+    queryUrl = 'http://magictcgprices.appspot.com/api/cfb/price.json?cardname={}'.format(cardname)
+    r = requests.get(queryUrl)
+
+    print(queryUrl)
+
+    if (r.status_code is not requests.codes.ok) or (not r.json()):
+        return None
+
+    print(r.json())
+
+    return r.json()[0]
