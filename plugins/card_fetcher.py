@@ -95,38 +95,40 @@ Implementation subject to change as various MTG APIs are created and destroyed
 Should always return a JSON in the mtgdb.info format:
 
 *id                 Integer     : multiverse Id
-relatedCardId       Integer     : multiverse Id of a related card, double faced and relying card
-setNumber           Integer     : card number in the set
 *name               String      : name of the card
-searchName          String      : easy to search card name
 *description        String      : the cards actions
-flavor              String      : flavor text adds story, does not effect game
-colors              String[]    : colors of card
 *manaCost           String      : the description of mana to cast spell
-convertedManaCost   Integer     : the amount of mana needed to cast spell
-cardSetName         String      : the set or expansion the card belongs to
 *type               String      : the type of card
 *subType            String      : subtype of card
 *power              Integer     : attack strength
 *toughness          Integer     : defense strength
 *loyalty            Integer     : loyalty points usually on planeswalkers
-rarity              String      : the rarity of the card
-artist              String      : artist of the illustrations
-cardSetId           String      : the abbreviated name of the set
-token               Boolean     : true if a token card, false if not
-promo               Boolean     : true if a promo card, false if not
-rulings             Ruling[]    : list of rulings for this card
-formats             Format[]    : list of legal formats this card is in
-releasedAt          Date        : when the card was released
+
 
 * indicates properties that are currently in use and must be present in the returned json
 '''
 
 
 def get_card_obj(cardname):
-    r = requests.get('http://api.mtgdb.info/cards/{}'.format(cardname))
 
-    if (not r.json()) or (r.status_code is not requests.codes.ok):
+    queryUrl = 'https://api.deckbrew.com/mtg/cards?name={}'.format(cardname)
+    r = requests.get(queryUrl)
+
+    if (r.status_code != requests.codes.ok) or (not r.json()):
         return None
 
-    return r.json()[0]
+    apiJson = r.json()[0]
+
+    formattedJson = {
+        'id': apiJson['editions'][0]['multiverse_id'],
+        'name': apiJson['name'],
+        'description': apiJson['text'],
+        'manaCost': apiJson['cost'],
+        'type': (' ').join(apiJson.get('types', [])).title(),
+        'subType': (' ').join(apiJson.get('subtypes', [])).title(),
+        'power': apiJson.get('power', ''),
+        'toughness': apiJson.get('toughness', ''),
+        'loyalty': apiJson.get('loyalty', '')
+    }
+
+    return formattedJson
