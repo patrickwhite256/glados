@@ -124,7 +124,7 @@ def get_card_obj(cardname):
     queryUrl = 'https://api.deckbrew.com/mtg/cards?name={}'.format(cardname)
     r = requests.get(queryUrl)
 
-    if (r.status_code is not requests.codes.ok) or (not r.json()):
+    if (r.status_code != requests.codes.ok) or (not r.json()):
         return None
 
     apiJson = r.json()[0]
