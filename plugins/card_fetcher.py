@@ -152,7 +152,7 @@ def get_card_price(cardname):
     queryUrl = 'http://magictcgprices.appspot.com/api/cfb/price.json?cardname={}'.format(cardname)
     r = requests.get(queryUrl)
 
-    if (r.status_code is not requests.codes.ok) or (not r.json()) or (r.json()[0] == ''):
+    if (r.status_code != requests.codes.ok) or (not r.json()) or (r.json()[0] == ''):
         return None
 
     return r.json()[0]
