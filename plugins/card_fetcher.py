@@ -96,6 +96,10 @@ class CardFetcher(GladosPluginBase):
 
             price = get_card_price(match)
 
+            if not price:
+                self.send(CARD_NOT_FOUND_ERR_TPL.format(match), msg['channel'])
+                continue
+
             self.send('CFB says the price of {} is {}'.format(match, price), msg['channel'], {})
 
 
@@ -148,11 +152,7 @@ def get_card_price(cardname):
     queryUrl = 'http://magictcgprices.appspot.com/api/cfb/price.json?cardname={}'.format(cardname)
     r = requests.get(queryUrl)
 
-    print(queryUrl)
-
-    if (r.status_code is not requests.codes.ok) or (not r.json()):
+    if (r.status_code is not requests.codes.ok) or (not r.json()) or (r.json()[0] == ''):
         return None
-
-    print(r.json())
 
     return r.json()[0]
