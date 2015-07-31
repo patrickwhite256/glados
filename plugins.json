@@ -26,5 +26,9 @@
     "pd_reminder": {
         "plugin_class": "PDReminder",
         "plugin_type": "async"
+    },
+    "gifme": {
+        "plugin_class": "GifMe",
+        "plugin_type": "normal"
     }
 }
