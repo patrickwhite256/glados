@@ -30,7 +30,7 @@ class GifMe(GladosPluginBase):
         def send_fail_msg(err=None):
             if err:
                 print(err)
-            self.send('No results found for "{}"'.format(query_str), msg['channel'])
+            self.send('No results found for "{}"'.format(query_match), msg['channel'])
 
         if r.status_code != requests.codes.ok:
             send_fail_msg()
