@@ -9,7 +9,7 @@ from plugin_base import GladosPluginBase
 # TIME TO USE IMGUR API
 GIPHY_API_URL_TPL = 'http://api.giphy.com/v1/gifs/search?q={query}&limit=10&api_key=dc6zaTOxFJmzC'
 
-query_re = re.compile(r'glados,?\s+giff?(?:\s+me)?\s+(.*)')
+query_re = re.compile(r'glados,?\s+giff?(?:\s+me)?\s+(.*)', re.I)
 
 
 class GifMe(GladosPluginBase):
@@ -27,8 +27,10 @@ class GifMe(GladosPluginBase):
 
         r = requests.get(query_url)
 
-        def send_fail_msg():
-            self.send('No results found for "{}"'.format(query_match))
+        def send_fail_msg(err=None):
+            if err:
+                print(err)
+            self.send('No results found for "{}"'.format(query_str), msg['channel'])
 
         if r.status_code != requests.codes.ok:
             send_fail_msg()
