@@ -101,11 +101,7 @@ class CardFetcher(GladosPluginBase):
                 self.send(CARD_NOT_FOUND_ERR_TPL.format(match), msg['channel'])
                 continue
 
-            urlmatch = urllib.parse.quote(match)
-            print(urlmatch)
-
             cfbSearchUrl = 'http://store.channelfireball.com/products/search?query={}'.format(urllib.parse.quote((match)))
-            print(cfbSearchUrl)
 
             self.send('<{}|CFB> says the price of {} is {}'.format(cfbSearchUrl, match, price), msg['channel'], {})
 
