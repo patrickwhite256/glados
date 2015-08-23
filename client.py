@@ -2,6 +2,7 @@
 
 import json
 from importlib import import_module
+from traceback import print_exc
 
 import requests
 import sqlalchemy
@@ -66,10 +67,14 @@ class GladosClient(WebSocketClient):
         if 'ok' in msg:
             return
         for plugin in self.plugins:
-            if plugin.can_handle_message(msg):
-                plugin.handle_message(msg)
-                if plugin.consumes_message:
-                    return
+            try:
+                if plugin.can_handle_message(msg):
+                    plugin.handle_message(msg)
+                    if plugin.consumes_message:
+                        return
+            except:
+                print_exc()
+                # TODO: reload that plugin
 
     def closed(self, code, reason=None):
         self.session.commit()
