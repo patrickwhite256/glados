@@ -2,6 +2,7 @@
 
 import re
 import requests
+import urllib
 
 from plugin_base import GladosPluginBase
 
@@ -100,7 +101,9 @@ class CardFetcher(GladosPluginBase):
                 self.send(CARD_NOT_FOUND_ERR_TPL.format(match), msg['channel'])
                 continue
 
-            self.send('CFB says the price of {} is {}'.format(match, price), msg['channel'], {})
+            cfbSearchUrl = 'http://store.channelfireball.com/products/search?query={}'.format(urllib.parse.quote((match)))
+
+            self.send('<{}|CFB> says the price of {} is {}'.format(cfbSearchUrl, match, price), msg['channel'], {})
 
 
 '''
@@ -131,7 +134,13 @@ def get_card_obj(cardname):
     if (r.status_code != requests.codes.ok) or (not r.json()):
         return None
 
-    apiJson = r.json()[0]
+    apiJson = next((card for card in r.json() if card['name'].lower() == cardname.lower()), None)
+
+    if (apiJson is None):
+        if (len(r.json()) > 0):
+            apiJson = r.json()[0]
+        else:
+            return None
 
     formattedJson = {
         'id': apiJson['editions'][0]['multiverse_id'],
