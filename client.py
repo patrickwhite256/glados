@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
+import datetime
 import json
+import os
 from importlib import import_module
 from traceback import print_exc
 
@@ -14,17 +16,23 @@ from plugin_base import DeclarativeBase as Base
 SLACK_RTM_START_URL = 'https://slack.com/api/rtm.start?token={}'
 SLACK_POST_MESSAGE_URL = 'https://slack.com/api/chat.postMessage'
 PLUGINS_FILENAME = 'plugins.json'
-DEBUG_CHANNEL_NAME = 'aperture-science'  # TODO: move this to a configuration file
+
+# TODO: move these to a configuration file
+DEBUG_CHANNEL_NAME = 'aperture-science'
+LOG_FILE_TEMPLATE = '/var/log/glados/{channel}/{date}.log'
+LOG_ENTRY_TEMPLATE = '[{time}] {name}: {message}'
 
 
 class GladosClient(WebSocketClient):
     debug = False
     bot_users = []
+    users = {}
     debug_channel = None
     general_channel = None
     async_plugins = {}
 
     def __init__(self, slack_token, **kwargs):
+        date = datetime.date.today().strftime('%Y-%m-%d')
         if kwargs.get('debug', False):
             self.debug = True
             del kwargs['debug']
@@ -34,7 +42,19 @@ class GladosClient(WebSocketClient):
         for user in wsdata['users']:
             if user['is_bot']:
                 self.bot_users.append(user['id'])
+            self.users[user['id']] = user['name']
+        self.bot_id = wsdata['self']['id']
+        self.log_files = dict()
         for channel in wsdata['channels']:
+            if channel['is_archived']:
+                continue
+            log_file_name = LOG_FILE_TEMPLATE.format(channel=channel['name'], date=date)
+            try:
+                os.makedirs(os.path.dirname(log_file_name))
+            except:
+                pass
+            log_file = open(log_file_name, 'a+')
+            self.log_files[channel['id']] = log_file
             if channel['name'] == DEBUG_CHANNEL_NAME:
                 self.debug_channel = channel['id']
             if channel['is_general']:
@@ -55,8 +75,8 @@ class GladosClient(WebSocketClient):
 
     def received_message(self, m):
         msg = json.loads(str(m))
-        if 'user' in msg and msg['user'] in self.bot_users:
-            return
+        if 'channel' in msg and 'message' not in msg and msg['type'] == 'message':
+            self.log_message(msg['text'], msg['user'], msg['channel'])
         if self.debug:
             print(m)
             if 'channel' in msg and msg['channel'] != self.debug_channel:
@@ -64,6 +84,8 @@ class GladosClient(WebSocketClient):
         else:
             if 'channel' in msg and msg['channel'] == self.debug_channel:
                 return
+        if 'user' in msg and msg['user'] in self.bot_users:
+            return
         if 'ok' in msg:
             return
         for plugin in self.plugins:
@@ -82,6 +104,8 @@ class GladosClient(WebSocketClient):
             plugin.teardown()
         if self.debug:
             print('You monster')
+        for log_file in self.log_files.values():
+            log_file.close()
 
     def init_memory(self):
         engine = sqlalchemy.create_engine('sqlite:///memory.db')
@@ -123,6 +147,15 @@ class GladosClient(WebSocketClient):
         for plugin in self.plugins + list(self.async_plugins.values()):
             plugin.setup()
 
+    def log_message(self, message, user_id, channel_id):
+        log_file = self.log_files[channel_id]
+        log_file.write(LOG_ENTRY_TEMPLATE.format(
+            time=datetime.datetime.now().strftime('%H:%M:%S'),
+            name=self.users[user_id],
+            message=message + '\n'
+        ))
+        log_file.flush()
+
     def post_message(self, message, channel, attachments=None):
         # TODO: add default channel
         data = {
@@ -132,7 +165,11 @@ class GladosClient(WebSocketClient):
             'as_user': True
         }
         if attachments is not None:
-            data['attachments'] = json.dumps(attachments)
+            attachments_json = json.dumps(attachments)
+            self.log_message(self, message + '|' + attachments_json['fallback'], self.bot_id, channel)
+            data['attachments'] = attachments_json
+        else:
+            self.log_message(message, self.bot_id, channel)
         response = requests.post(SLACK_POST_MESSAGE_URL, data=data)
         if self.debug:
             print(response)
