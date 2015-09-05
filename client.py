@@ -148,7 +148,10 @@ class GladosClient(WebSocketClient):
             plugin.setup()
 
     def log_message(self, message, user_id, channel_id):
-        log_file = self.log_files[channel_id]
+        try:
+            log_file = self.log_files[channel_id]
+        except KeyError:
+            return
         log_file.write(LOG_ENTRY_TEMPLATE.format(
             time=datetime.datetime.now().strftime('%H:%M:%S'),
             name=self.users[user_id],
@@ -166,7 +169,7 @@ class GladosClient(WebSocketClient):
         }
         if attachments is not None:
             attachments_json = json.dumps(attachments)
-            self.log_message(self, message + '|' + attachments_json['fallback'], self.bot_id, channel)
+            self.log_message(message + '|' + attachments[0]['fallback'], self.bot_id, channel)
             data['attachments'] = attachments_json
         else:
             self.log_message(message, self.bot_id, channel)
