@@ -56,8 +56,7 @@ if __name__ == '__main__':
     socket_process = Process(target=handle_socket_connections, args=(gclient, sock))
     socket_process.start()
     gclient.connect()
-    try:
-        gclient.run_forever()
-    except:
-        traceback.print_exc()
-        socket_process.terminate()
+    gclient.run_forever()
+    # if it gets past here it's crashed
+
+    socket_process.terminate()
