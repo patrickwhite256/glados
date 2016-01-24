@@ -103,7 +103,7 @@ class CardFetcher(GladosPluginBase):
 
             cfbSearchUrl = 'http://store.channelfireball.com/products/search?query={}'.format(urllib.parse.quote((match)))
 
-            self.send('<{}|CFB> says the price of {} is {}'.format(cfbSearchUrl, match, price), msg['channel'], {})
+            self.send('<{}|CFB> says the price of {} is {}'.format(cfbSearchUrl, match, price), msg['channel'])
 
 
 '''
