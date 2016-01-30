@@ -15,11 +15,13 @@ from plugin_base import DeclarativeBase as Base
 
 SLACK_RTM_START_URL = 'https://slack.com/api/rtm.start?token={}'
 SLACK_POST_MESSAGE_URL = 'https://slack.com/api/chat.postMessage'
+SLACK_ADD_REACTION_URL = 'https://slack.com/api/reactions.add'
 PLUGINS_FILENAME = 'plugins.json'
 
 # TODO: move these to a configuration file
 DEBUG_CHANNEL_NAME = 'aperture-science'
 LOG_FILE_TEMPLATE = '/var/log/glados/{channel}/{date}.log'
+DEBUG_LOG_FILE_TEMPLATE = '/tmp/glados/{channel}/{date}.log'
 LOG_ENTRY_TEMPLATE = '[{time}] {name}: {message}'
 
 
@@ -46,7 +48,10 @@ class GladosClient(WebSocketClient):
         for channel in wsdata['channels']:
             if channel['is_archived']:
                 continue
-            log_file_name = LOG_FILE_TEMPLATE.format(channel=channel['name'], date=date)
+            if debug:
+                log_file_name = DEBUG_LOG_FILE_TEMPLATE.format(channel=channel['name'], date=date)
+            else:
+                log_file_name = LOG_FILE_TEMPLATE.format(channel=channel['name'], date=date)
             try:
                 os.makedirs(os.path.dirname(log_file_name))
             except:
@@ -137,9 +142,16 @@ class GladosClient(WebSocketClient):
             plugin_name = plugin_data['name']
             try:
                 if plugin_data['type'] == 'normal':
-                    self.plugins.append(plugin_class(self.session, self.post_message))
+                    self.plugins.append(plugin_class(
+                        self.session,
+                        self.post_message,
+                        react_to_message=self.react_to_message
+                    ))
                 elif plugin_data['type'] == 'async':
-                    self.async_plugins[plugin_name] = plugin_class(self.session, self.post_general)
+                    self.async_plugins[plugin_name] = plugin_class(
+                        self.session,
+                        self.post_general
+                    )
             except Exception as e:
                 print('Problem initializing plugin {}:\n{}'.format(plugin_class.__name__, e))
         for plugin in self.plugins + list(self.async_plugins.values()):
@@ -173,6 +185,17 @@ class GladosClient(WebSocketClient):
         else:
             self.log_message(message, self.bot_id, channel)
         response = requests.post(SLACK_POST_MESSAGE_URL, data=data)
+        if self.debug:
+            print(response)
+
+    def react_to_message(self, msg, reaction):
+        data = {
+            'token': self.token,
+            'channel': msg['channel'],
+            'timestamp': msg['ts'],
+            'name': reaction
+        }
+        response = requests.post(SLACK_ADD_REACTION_URL, data=data)
         if self.debug:
             print(response)
 
