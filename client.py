@@ -31,11 +31,9 @@ class GladosClient(WebSocketClient):
     general_channel = None
     async_plugins = {}
 
-    def __init__(self, slack_token, **kwargs):
+    def __init__(self, slack_token, debug=False, **kwargs):
         date = datetime.date.today().strftime('%Y-%m-%d')
-        if kwargs.get('debug', False):
-            self.debug = True
-            del kwargs['debug']
+        self.debug = debug
         self.token = slack_token
         wsdata = requests.get(SLACK_RTM_START_URL.format(slack_token)).json()
         url = wsdata['url']
@@ -165,6 +163,7 @@ class GladosClient(WebSocketClient):
             'token': self.token,
             'channel': channel,
             'text': message,
+            'link_names': 1,
             'as_user': True
         }
         if attachments is not None:

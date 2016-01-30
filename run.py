@@ -34,7 +34,8 @@ def handle_socket_connections(client, sock):
         finally:
             connection.close()
 
-if __name__ == '__main__':
+
+def main():
     signal.signal(signal.SIGTERM, stop)
     try:
         token_file = open('.slack-token')
@@ -52,7 +53,16 @@ if __name__ == '__main__':
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.bind(SOCKET_FILENAME)
     sock.listen(1)
-    gclient = GladosClient(token)
+
+    debug = False
+    if len(sys.argv) > 1:
+        if len(sys.argv) == 2 and sys.argv[1] == '--debug':
+            debug = True
+        else:
+            print('Usage: {} [--debug]'.format(sys.argv[0]))
+
+    gclient = GladosClient(token, debug=debug)
+
     socket_process = Process(target=handle_socket_connections, args=(gclient, sock))
     socket_process.start()
     gclient.connect()
@@ -60,3 +70,6 @@ if __name__ == '__main__':
     # if it gets past here it's crashed
 
     socket_process.terminate()
+
+if __name__ == '__main__':
+    main()
