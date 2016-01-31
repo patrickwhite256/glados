@@ -169,15 +169,16 @@ class GladosClient(WebSocketClient):
         ))
         log_file.flush()
 
-    def post_message(self, message, channel, attachments=None):
+    def post_message(self, message, channel, attachments=None, link_names=True):
         # TODO: add default channel
         data = {
             'token': self.token,
             'channel': channel,
             'text': message,
-            'link_names': 1,
             'as_user': True
         }
+        if link_names:
+            data['link_names'] = 1
         if attachments is not None:
             attachments_json = json.dumps(attachments)
             self.log_message(message + '|' + attachments[0]['fallback'], self.bot_id, channel)
