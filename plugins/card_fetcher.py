@@ -9,8 +9,6 @@ from plugin_base import GladosPluginBase
 GATHERER_IMG_TPL = 'http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid={}&type=card'
 CARD_NOT_FOUND_ERR_TPL = 'Whoops, looks like {} isn\'t a magic card'
 MTGSTOCKS_LINK_TPL = '<{}|MTGStocks.com> price for {}'
-PRICES_TPL = '*Low* - {} | *Average* - {} | *High* - {}'
-
 
 # [[cardname]] fetches a card's image
 cardimg_re = re.compile(r'.*?\[\[(.+?)\]\]')
