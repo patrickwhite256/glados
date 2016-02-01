@@ -6,9 +6,11 @@ DeclarativeBase = declarative_base()
 class GladosPluginBase(object):
     consumes_message = False  # set true if the event should not continue propogating
 
-    def __init__(self, db_session, send_fn):
+    def __init__(self, db_session, send_fn, **kwargs):
         self.send = send_fn
         self.db_session = db_session
+        for fn_name, fn in kwargs.items():
+            setattr(self, fn_name, fn)
 
     def setup(self):
         """
