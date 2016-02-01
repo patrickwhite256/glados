@@ -8,6 +8,9 @@ from plugin_base import GladosPluginBase
 
 GATHERER_IMG_TPL = 'http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid={}&type=card'
 CARD_NOT_FOUND_ERR_TPL = 'Whoops, looks like {} isn\'t a magic card'
+MTGSTOCKS_LINK_TPL = '<{}|MTGStocks.com> price for {}'
+PRICES_TPL = '*Low* - {} | *Average* - {} | *High* - {}'
+
 
 # [[cardname]] fetches a card's image
 cardimg_re = re.compile(r'.*?\[\[(.+?)\]\]')
@@ -95,15 +98,50 @@ class CardFetcher(GladosPluginBase):
 
         for match in pricing_matches:
 
-            price = get_card_price(match)
+            card_obj = get_card_price(match)
 
-            if not price:
+            if not card_obj:
                 self.send(CARD_NOT_FOUND_ERR_TPL.format(match), msg['channel'])
                 continue
 
-            cfbSearchUrl = 'http://store.channelfireball.com/products/search?query={}'.format(urllib.parse.quote((match)))
+            prices = card_obj['prices']
+            
+            card_attachment = {
+                'fallback': card_obj['name'],
+                'title': card_obj['name'],
+                'fields': [
+                    {
+                        'title': 'Set',
+                        'value': card_obj['set'],
+                        'short': True 
+                    },
+                    {
+                        'title': 'Average',
+                        'value': prices['avg'],
+                        'short': True
+                    }
+                ]
+            }
 
-            self.send('<{}|CFB> says the price of {} is {}'.format(cfbSearchUrl, match, price), msg['channel'])
+            if not card_obj['promo']:
+                card_attachment['fields'].extend(
+                    [
+                        {
+                            'title': 'Low',
+                            'value': prices['low'],
+                            'short': True
+                        },
+                        {
+                            'title': 'High',
+                            'value': prices['high'],
+                            'short': True
+                        }
+                    ]
+                )
+                 
+            
+            attachments = [card_attachment] 
+            self.send(MTGSTOCKS_LINK_TPL.format(card_obj['link'], match), msg['channel'], attachments)
 
 
 '''
@@ -128,40 +166,40 @@ Should always return a JSON in the mtgdb.info format:
 
 def get_card_obj(cardname):
 
-    queryUrl = 'https://api.deckbrew.com/mtg/cards?name={}'.format(cardname)
-    r = requests.get(queryUrl)
-
+    query_url = 'https://api.deckbrew.com/mtg/cards?name={}'.format(cardname)
+    r = requests.get(query_url)
+    
     if (r.status_code != requests.codes.ok) or (not r.json()):
         return None
 
-    apiJson = next((card for card in r.json() if card['name'].lower() == cardname.lower()), None)
+    api_json = next((card for card in r.json() if card['name'].lower() == cardname.lower()), None)
 
-    if (apiJson is None):
+    if (api_json is None):
         if (len(r.json()) > 0):
-            apiJson = r.json()[0]
+            api_json = r.json()[0]
         else:
             return None
 
-    formattedJson = {
-        'id': apiJson['editions'][0]['multiverse_id'],
-        'name': apiJson['name'],
-        'description': apiJson['text'],
-        'manaCost': apiJson['cost'],
-        'type': (' ').join(apiJson.get('types', [])).title(),
-        'subType': (' ').join(apiJson.get('subtypes', [])).title(),
-        'power': apiJson.get('power', ''),
-        'toughness': apiJson.get('toughness', ''),
-        'loyalty': apiJson.get('loyalty', '')
+    formatted_json = {
+        'id': api_json['editions'][0]['multiverse_id'],
+        'name': api_json['name'],
+        'description': api_json['text'],
+        'manaCost': api_json['cost'],
+        'type': (' ').join(api_json.get('types', [])).title(),
+        'subType': (' ').join(api_json.get('subtypes', [])).title(),
+        'power': api_json.get('power', ''),
+        'toughness': api_json.get('toughness', ''),
+        'loyalty': api_json.get('loyalty', '')
     }
 
-    return formattedJson
+    return formatted_json
 
 
 def get_card_price(cardname):
-    queryUrl = 'http://magictcgprices.appspot.com/api/cfb/price.json?cardname={}'.format(cardname)
-    r = requests.get(queryUrl)
-
-    if (r.status_code != requests.codes.ok) or (not r.json()) or (r.json()[0] == ''):
+    query_url = 'http://mtg-price-fetcher.us-west-1.elasticbeanstalk.com/cards/{}'.format(cardname)
+    r = requests.get(query_url)
+    
+    if (r.status_code != requests.codes.ok) or (not r.json()):
         return None
 
-    return r.json()[0]
+    return r.json()
