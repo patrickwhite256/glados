@@ -142,10 +142,12 @@ class GladosClient(WebSocketClient):
             plugin_name = plugin_data['name']
             try:
                 if plugin_data['type'] == 'normal':
+                    # TODO: a more elegant way of passing data to plugins
                     self.plugins.append(plugin_class(
                         self.session,
                         self.post_message,
-                        react_to_message=self.react_to_message
+                        react_to_message=self.react_to_message,
+                        debug=self.debug
                     ))
                 elif plugin_data['type'] == 'async':
                     self.async_plugins[plugin_name] = plugin_class(
