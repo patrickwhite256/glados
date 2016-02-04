@@ -25,7 +25,7 @@ class IAmAlive(GladosPluginBase):
     def get_version(self):
         if not hasattr(self, 'version'):
             version = subprocess.check_output(
-                ['git', 'rev-parse', 'HEAD']
+                ['/usr/bin/git', 'rev-parse', 'HEAD']
             ).decode('utf8').replace('\n', '')
             setattr(self, 'version', version)
         return self.version

@@ -36,6 +36,7 @@ def handle_socket_connections(client, sock):
 
 
 def main():
+    global gclient
     signal.signal(signal.SIGTERM, stop)
     try:
         token_file = open('.slack-token')
