@@ -62,7 +62,7 @@ class CardFetcher(GladosPluginBase):
                 'fields': [
                     {
                         'title': 'Mana Cost',
-                        'value': card_obj['manaCost'],
+                        'value': format_mana(card_obj['manaCost']),
                         'short': True
                     },
                     {
@@ -72,7 +72,7 @@ class CardFetcher(GladosPluginBase):
                     },
                     {
                         'title': 'Text',
-                        'value': card_obj['description'],
+                        'value': format_mana(card_obj['description']),
                         'short': False
                     }
                 ]
@@ -201,3 +201,27 @@ def get_card_price(cardname):
         return None
 
     return r.json()
+
+
+# replaces all manacost sequences (denoted by characters or numbers wrapped in {})
+# with the appropriate manacost emoticons
+def format_mana(string):
+    return re.sub(r'\{(.+?)\}', format_mana_symbol, string)
+
+
+def format_mana_symbol(match):
+    sym = match.group(0).lower()
+    sym = re.sub(r'[{}]', '', sym)
+
+    if (len(sym) == 3 and sym[1] == '/'):
+        sym = re.sub(r'\/', '', sym)
+
+    if (len(sym) == 2 and sym[1] == 'p'):
+        sym = sym[::-1]
+
+    if (sym == 't'):
+        return ':tap:'
+    elif (sym == 'q'):
+        return ':untap:'
+    else:
+        return ':{}mana:'.format(sym)
