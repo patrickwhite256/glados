@@ -10,11 +10,11 @@ Group plugin. Allows you to notify groups of users.
 Commands:
 glados create group NAME
 glados delete group NAME
-glados add USER to group NAME
-glados remove USER from group NAME
+glados add USER|me to group NAME
+glados remove USER|me from group NAME
 glados help groups
-glados list groups
-glados show group NAME
+glados list groups (pm)
+glados show group NAME (pm)
 Notify groups with @NAME in a message.
 '''.strip()
 
