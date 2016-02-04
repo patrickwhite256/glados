@@ -131,6 +131,7 @@ class Groups(GladosPluginBase):
                 )
                 return
         user = self.create_or_get_user(user_id)
+        name = user.name
         if user in group.users:
             self.send(
                 'Failure: cannot add user to @{}. '
@@ -173,6 +174,7 @@ class Groups(GladosPluginBase):
             return
 
         user = self.create_or_get_user(user_id)
+        name = user.name
         if user == group.owner:
             self.send(
                 'Failure: cannot remove user from @{}. '
