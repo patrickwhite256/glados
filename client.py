@@ -26,14 +26,14 @@ LOG_ENTRY_TEMPLATE = '[{time}] {name}: {message}'
 
 
 class GladosClient(WebSocketClient):
-    debug = False
-    bot_users = []
-    users = {}
-    debug_channel = None
-    general_channel = None
-    async_plugins = {}
-
     def __init__(self, slack_token, debug=False, **kwargs):
+        self.debug = False
+        self.bot_users = []
+        self.users = {}
+        self.channels = {}
+        self.debug_channel = None
+        self.general_channel = None
+        self.async_plugins = {}
         date = datetime.date.today().strftime('%Y-%m-%d')
         self.debug = debug
         self.token = slack_token
@@ -48,6 +48,7 @@ class GladosClient(WebSocketClient):
         for channel in wsdata['channels']:
             if channel['is_archived']:
                 continue
+            self.channels[channel['id']] = channel['name']
             if debug:
                 log_file_name = DEBUG_LOG_FILE_TEMPLATE.format(channel=channel['name'], date=date)
             else:
@@ -147,7 +148,9 @@ class GladosClient(WebSocketClient):
                         self.session,
                         self.post_message,
                         react_to_message=self.react_to_message,
-                        debug=self.debug
+                        debug=self.debug,
+                        users=self.users,
+                        channels=self.channels
                     ))
                 elif plugin_data['type'] == 'async':
                     self.async_plugins[plugin_name] = plugin_class(
@@ -171,13 +174,14 @@ class GladosClient(WebSocketClient):
         ))
         log_file.flush()
 
-    def post_message(self, message, channel, attachments=None, link_names=True):
+    def post_message(self, message, channel, attachments=None,
+                     link_names=True, as_user=True):
         # TODO: add default channel
         data = {
             'token': self.token,
             'channel': channel,
             'text': message,
-            'as_user': True
+            'as_user': as_user
         }
         if link_names:
             data['link_names'] = 1

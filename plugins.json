@@ -34,5 +34,9 @@
     "lmao": {
         "plugin_class": "AyyLmao",
         "plugin_type": "normal"
+    },
+    "groups": {
+        "plugin_class": "Groups",
+        "plugin_type": "normal"
     }
 }
