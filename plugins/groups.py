@@ -14,6 +14,7 @@ glados add USER|me to group NAME
 glados remove USER|me from group NAME
 glados help groups
 glados list groups (pm)
+glados list my groups (pm)
 glados show group NAME (pm)
 Notify groups with @NAME in a message.
 '''.strip()
@@ -24,6 +25,7 @@ add_re = re.compile(r'glados(?:,)? add (\w+) to group (\w+)', re.I)
 remove_re = re.compile(r'glados(?:,)? remove (\w+) from group (\w+)', re.I)
 help_re = re.compile(r'glados(?:,)? help groups', re.I)
 list_re = re.compile(r'glados(?:,)? list groups', re.I)
+list_my_re = re.compile(r'glados(?:,)? list my groups', re.I)
 info_re = re.compile(r'glados(?:,)? show group (\w+)', re.I)
 notify_re = re.compile(r'.*@(\w+)')
 
@@ -43,6 +45,7 @@ class Groups(GladosPluginBase):
             remove_re,
             help_re,
             list_re,
+            list_my_re,
             info_re,
             notify_re
         ]
@@ -208,6 +211,14 @@ class Groups(GladosPluginBase):
             '@{}'.format(self.users[user])
         )
 
+    def list_my_groups(self, user, channel):
+        groups = self.create_or_get_user(user).groups
+        group_list = ', '.join(_.name for _ in groups)
+        self.send(
+            'Groups: {}'.format(group_list),
+            '@{}'.format(self.users[user])
+        )
+
     def group_info(self, groupname, user, channel):
         group = self.db_session.query(Group).filter_by(
             name=groupname
@@ -253,6 +264,7 @@ class Groups(GladosPluginBase):
             (remove_re, self.remove_from_group),
             (help_re, self.help_groups),
             (list_re, self.list_groups),
+            (list_my_re, self.list_my_groups),
             (info_re, self.group_info),
             (notify_re, self.notify_group)
         ]
@@ -288,7 +300,8 @@ class Group(Base):
 
     users = sqlalchemy.orm.relationship(
         'GroupUser',
-        secondary=group_user_association
+        secondary=group_user_association,
+        backref="groups"
     )
 
 

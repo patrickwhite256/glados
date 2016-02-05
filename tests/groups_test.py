@@ -329,6 +329,29 @@ def test_list_groups(plugin):
     assert plugin.send.call_args[0][1] != 'CHANNEL'
 
 
+def test_list_my_groups(plugin):
+    plugin.handle_message(format_message(
+        'glados create group test_my_list_one',
+        user_id='DEZEL'
+    ))
+    plugin.handle_message(format_message(
+        'glados create group test_my_list_two',
+        user_id='DEZEL'
+    ))
+    plugin.handle_message(format_message(
+        'glados create group test_my_list_three',
+        user_id='EDNA'
+    ))
+    plugin.handle_message(format_message(
+        'glados list my groups',
+        user_id='DEZEL'
+    ))
+    assert 'test_my_list_one' in plugin.send.call_args[0][0].lower()
+    assert 'test_my_list_two' in plugin.send.call_args[0][0].lower()
+    assert 'test_my_list_three' not in plugin.send.call_args[0][0].lower()
+    assert plugin.send.call_args[0][1] != 'CHANNEL'
+
+
 def test_show_group(plugin):
     plugin.handle_message(format_message(
         'glados create group test_show',
