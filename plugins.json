@@ -38,5 +38,9 @@
     "groups": {
         "plugin_class": "Groups",
         "plugin_type": "normal"
+    },
+    "khaled": {
+        "plugin_class": "Khaled",
+        "plugin_type": "normal"
     }
 }
