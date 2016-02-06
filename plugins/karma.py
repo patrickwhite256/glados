@@ -7,9 +7,17 @@ import sqlalchemy
 from plugin_base import DeclarativeBase as Base
 from plugin_base import GladosPluginBase
 
-karma_re = re.compile(r'karma ([A-Za-z_]+)', re.I)
-add_re = re.compile(r'([A-Za-z_]+)\+\+', re.I)
-take_re = re.compile(r'([A-Za-z_]+)--', re.I)
+KARMA_RE = re.compile(r'karma ([A-Za-z_]+)', re.I)
+ADD_RE = re.compile(r'([A-Za-z_]+)\+\+', re.I)
+TAKE_RE = re.compile(r'([A-Za-z_]+)--', re.I)
+
+HELP_TEXT = '''
+A plugin for tracking karma.
+Usage:
+NAME++
+NAME--
+karma NAME
+'''
 
 
 class Karmator(GladosPluginBase):
@@ -20,36 +28,50 @@ class Karmator(GladosPluginBase):
             return False
         if 'message' in msg:
             return False
-        return karma_re.search(msg['text']) or add_re.search(msg['text']) or take_re.search(msg['text'])
+        return \
+            KARMA_RE.match(msg['text']) or \
+            ADD_RE.search(msg['text']) or \
+            TAKE_RE.search(msg['text'])
 
     def handle_message(self, msg):
-        karma_match = karma_re.search(msg['text'])
-        add_match = add_re.search(msg['text'])
-        take_match = take_re.search(msg['text'])
+        karma_match = KARMA_RE.match(msg['text'])
+        add_match = ADD_RE.search(msg['text'])
+        take_match = TAKE_RE.search(msg['text'])
         if karma_match:
             name = karma_match.group(1).lower()
-            item = self.db_session.query(KarmaItem).filter_by(name=name).first()
+            item = self.db_session.query(KarmaItem).filter_by(
+                name=name
+            ).first()
             if item is None:
                 plus = 0
                 minus = 0
             else:
                 plus = item.plus
                 minus = item.minus
-            self.send('{}: {} [{}++, {}--]'.format(name, plus - minus, plus, minus), msg['channel'])
+            self.send('{}: {} [{}++, {}--]'.format(name, plus - minus, plus,
+                                                   minus), msg['channel'])
         elif add_match:
             name = add_match.group(1).lower()
-            item = self.db_session.query(KarmaItem).filter_by(name=name).first()
+            item = self.db_session.query(KarmaItem).filter_by(
+                name=name
+            ).first()
             if item is None:
                 item = KarmaItem(name=name, plus=0, minus=0)
                 self.db_session.add(item)
             item.plus += 1
         elif take_match:
             name = take_match.group(1).lower()
-            item = self.db_session.query(KarmaItem).filter_by(name=name).first()
+            item = self.db_session.query(KarmaItem).filter_by(
+                name=name
+            ).first()
             if item is None:
                 item = KarmaItem(name=name, plus=0, minus=0)
                 self.db_session.add(item)
             item.minus += 1
+
+    @property
+    def help_text(self):
+        return HELP_TEXT
 
 
 class KarmaItem(Base):

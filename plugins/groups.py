@@ -203,6 +203,10 @@ class Groups(GladosPluginBase):
     def help_groups(self, user, channel):
         self.send(HELP_TEXT, channel)
 
+    @property
+    def help_text(self):
+        return HELP_TEXT
+
     def list_groups(self, user, channel):
         groups = self.db_session.query(Group).all()
         group_list = ', '.join(_.name for _ in groups)

@@ -6,8 +6,13 @@ import requests
 
 from plugin_base import GladosPluginBase
 
-search_re = re.compile(r'glados,? urban me (.+)', re.I)
-urban_api_templ = 'http://api.urbandictionary.com/v0/define?term={}'
+SEARCH_RE = re.compile(r'glados,? urban me (.+)', re.I)
+URBAN_API_TPL = 'http://api.urbandictionary.com/v0/define?term={}'
+
+HELP_TEXT = '''
+A plugin that tells you what's what.
+Usage: glados urban me PHRASE
+'''.strip()
 
 
 def italicize(string):
@@ -23,12 +28,12 @@ class UrbanMe(GladosPluginBase):
             return False
         if 'message' in msg:
             return False
-        return search_re.search(msg['text'])
+        return SEARCH_RE.search(msg['text'])
 
     def handle_message(self, msg):
-        search_match = search_re.search(msg['text'])
+        search_match = SEARCH_RE.search(msg['text'])
         search_query = search_match.group(1)
-        response = requests.get(urban_api_templ.format(search_query)).json()
+        response = requests.get(URBAN_API_TPL.format(search_query)).json()
         if response['list']:
             message_text = ''
             result = response['list'][0]
@@ -38,7 +43,8 @@ class UrbanMe(GladosPluginBase):
                     'fallback': definition,
                     'title': result['word'],
                     'title_link': result['permalink'],
-                    'text': '{}\n{}'.format(definition, italicize(result['example'])),
+                    'text': '{}\n{}'.format(definition,
+                                            italicize(result['example'])),
                     'fields': [
                         {
                             'title': 'Author',
@@ -47,7 +53,8 @@ class UrbanMe(GladosPluginBase):
                         },
                         {
                             'title': 'Votes',
-                            'value': '+{} -{}'.format(result['thumbs_up'], result['thumbs_down']),
+                            'value': '+{} -{}'.format(result['thumbs_up'],
+                                                      result['thumbs_down']),
                             'short': True
                         }
                     ],
@@ -58,3 +65,7 @@ class UrbanMe(GladosPluginBase):
         else:
             message_text = 'No results found for "{}"'.format(search_query)
             self.send(message_text, msg['channel'])
+
+    @property
+    def help_text(self):
+        return HELP_TEXT

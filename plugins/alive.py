@@ -5,6 +5,10 @@ import subprocess
 
 from plugin_base import GladosPluginBase
 
+HELP_TEXT = '''A plugin that tells you if I am running, and what version.
+Usage: glados, are you alive?
+'''
+
 
 class IAmAlive(GladosPluginBase):
     consumes_message = True
@@ -29,3 +33,7 @@ class IAmAlive(GladosPluginBase):
             ).decode('utf8').replace('\n', '')
             setattr(self, 'version', version)
         return self.version
+
+    @property
+    def help_text(self):
+        return HELP_TEXT

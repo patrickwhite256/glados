@@ -7,8 +7,15 @@ import sqlalchemy
 from plugin_base import DeclarativeBase as Base
 from plugin_base import GladosPluginBase
 
-memory_re = re.compile(r'glados,? know that ((?:(?!\sis).)+)\sis\s(.+)', re.I)
-recall_re = re.compile(r'glados,? what is (.+)', re.I)
+MEMORY_RE = re.compile(r'glados,? know that ((?:(?!\sis).)+)\sis\s(.+)', re.I)
+RECALL_RE = re.compile(r'glados,? what is (.+)', re.I)
+
+HELP_TEXT = '''
+A plugin that remembers what things are.
+Usage:
+glados, know that NAME is SOMETHING
+glados, what is NAME
+'''.strip()
 
 
 class WhatIs(GladosPluginBase):
@@ -19,11 +26,11 @@ class WhatIs(GladosPluginBase):
             return False
         if 'message' in msg:
             return False
-        return memory_re.search(msg['text']) or recall_re.search(msg['text'])
+        return MEMORY_RE.search(msg['text']) or RECALL_RE.search(msg['text'])
 
     def handle_message(self, msg):
-        memory_match = memory_re.search(msg['text'])
-        recall_match = recall_re.search(msg['text'])
+        memory_match = MEMORY_RE.search(msg['text'])
+        recall_match = RECALL_RE.search(msg['text'])
         if memory_match:
             name = memory_match.group(1)
             alias = memory_match.group(2)
@@ -36,17 +43,22 @@ class WhatIs(GladosPluginBase):
             message_text = 'I will remember that {} is {}'.format(name, alias),
             self.send(message_text, msg['channel'])
         if recall_match:
-            item = self.db_session.query(Item).filter_by(name=recall_match.group(1)).first()
+            i_name = recall_match.group(1)
+            item = self.db_session.query(Item).filter_by(name=i_name).first()
             msg = {
                 'id': 4,
                 'type': 'message',
                 'channel': msg['channel']
             }
             if item is None:
-                message_text = '{0} is {0}'.format(recall_match.group(1))
+                message_text = '{0} is {0}'.format(i_name)
             else:
                 message_text = '{} is {}'.format(item.name, item.alias)
             self.send(message_text, msg['channel'])
+
+    @property
+    def help_text(self):
+        return HELP_TEXT
 
 
 class Item(Base):

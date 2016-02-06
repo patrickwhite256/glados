@@ -2,7 +2,6 @@
 
 import re
 import requests
-import urllib
 
 from plugin_base import GladosPluginBase
 
@@ -16,6 +15,8 @@ cardimg_re = re.compile(r'.*?\[\[(.+?)\]\]')
 oracle_re = re.compile(r'.*?{{(.+?)}}')
 # $$cardname$$ fetches the price of the card
 price_re = re.compile(r'.*?\$\$(.+?)\$\$')
+
+HELP_TEXT = 'Joel needs to write this'
 
 
 class CardFetcher(GladosPluginBase):
@@ -140,6 +141,10 @@ class CardFetcher(GladosPluginBase):
             
             attachments = [card_attachment] 
             self.send(MTGSTOCKS_LINK_TPL.format(card_obj['link'], match), msg['channel'], attachments)
+
+    @property
+    def help_text(self):
+        return HELP_TEXT
 
 
 '''

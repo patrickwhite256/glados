@@ -11,6 +11,8 @@ GIPHY_API_URL_TPL = 'http://api.giphy.com/v1/gifs/search?q={query}&limit=10&api_
 
 query_re = re.compile(r'glados,?\s+giff?(?:\s+me)?\s+(.*)', re.I)
 
+HELP_TEXT = 'I regret everything.'
+
 
 class GifMe(GladosPluginBase):
     consumes_message = True
@@ -48,3 +50,7 @@ class GifMe(GladosPluginBase):
         }]
 
         self.send('', msg['channel'], attachments)
+
+    @property
+    def help_text(self):
+        return HELP_TEXT

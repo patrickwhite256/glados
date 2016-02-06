@@ -25,8 +25,8 @@ LOG_FILE_TEMPLATE = '/var/log/glados/{channel}/{date}.log'
 DEBUG_LOG_FILE_TEMPLATE = '/tmp/glados/{channel}/{date}.log'
 LOG_ENTRY_TEMPLATE = '[{time}] {name}: {message}'
 
-PLUGIN_HELP_RE = re.compile(r'glados,? help .*')
-HELP_RE = re.compile(r'glados,? help')
+PLUGIN_HELP_RE = re.compile(r'glados,? help (.*)', re.I)
+HELP_RE = re.compile(r'glados,? help', re.I)
 
 HELP_TEXT = '''
 Hello. I am GLaDOS (Genetic Lifeform and Disk Operating System).
@@ -182,7 +182,10 @@ class GladosClient(WebSocketClient):
                         users=self.users,
                         channels=self.channels
                     )
-                    plugin.get_help_text()  # make sure plugin has help text
+                    # make sure plugin has help text
+                    text = getattr(plugin, 'help_text')
+                    if not isinstance(text, str):
+                        raise AttributeError('help_text must be a property')
                     self.plugins.append(plugin)
                 elif plugin_data['type'] == 'async':
                     self.async_plugins[plugin_name] = plugin_class(
@@ -212,9 +215,9 @@ class GladosClient(WebSocketClient):
     def handle_help_message(self, message, channel):
         match = PLUGIN_HELP_RE.match(message)
         if match:
-            plugin_name = match.group(1)
+            plugin_name = match.group(1).lower()
             for plugin in self.plugins:
-                if plugin.plugin_name == plugin_name:
+                if plugin.plugin_name.lower() == plugin_name:
                     self.post_message(plugin.help_text, channel)
                     return True
             self.post_message('No plugin of that name installed.', channel)
@@ -222,7 +225,7 @@ class GladosClient(WebSocketClient):
         if HELP_RE.match(message):
             plugin_list = '\n'.join([_.plugin_name for _ in self.plugins])
             help_text = HELP_TEXT.format(plugin_list)
-            self.post(help_text, channel)
+            self.post_message(help_text, channel)
             return True
         return False
 
