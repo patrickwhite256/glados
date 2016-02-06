@@ -30,7 +30,7 @@ You can run a development version of GLaDOS by running `client.py` but if you wa
 Contributing
 ------------
 Contributions in the form of updates to the core functionality and plugins are welcome.
-Please respect existing conventions within the code and in particular make sure all code passes `flake8` with line length limit 120 before submitting a pull request.
+Please respect existing conventions within the code and in particular make sure all code passes `flake8` before submitting a pull request. If you work on the core client, please run pylint over your changes before submitting them.
 
 To-do
 -----

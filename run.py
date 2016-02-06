@@ -4,7 +4,6 @@ import os
 import signal
 import socket
 import sys
-import traceback
 from multiprocessing import Process
 
 from client import GladosClient
@@ -20,6 +19,7 @@ def stop(signum, frame):
 
 def handle_socket_connections(client, sock):
     while True:
+        # pylint: disable=unused-variable
         connection, client_addr = sock.accept()
         try:
             data = connection.recv(256).decode('utf8')
@@ -29,8 +29,6 @@ def handle_socket_connections(client, sock):
             plugin_name = message_contents[:name_len]
             message_data = message_contents[name_len:]
             client.handle_async(plugin_name, message_data)
-        except:
-            traceback.print_exc()
         finally:
             connection.close()
 
@@ -64,7 +62,8 @@ def main():
 
     gclient = GladosClient(token, debug=debug)
 
-    socket_process = Process(target=handle_socket_connections, args=(gclient, sock))
+    socket_process = Process(target=handle_socket_connections,
+                             args=(gclient, sock))
     socket_process.start()
     gclient.connect()
     gclient.run_forever()

@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name
 from unittest.mock import Mock
 
 import pytest
@@ -21,8 +22,8 @@ def plugin():
     # use in-memory
     engine = sqlalchemy.create_engine('sqlite://')
     Base.metadata.create_all(engine)
-    Session = sqlalchemy.orm.sessionmaker(engine)
-    session = Session()
+    session_cls = sqlalchemy.orm.sessionmaker(engine)
+    session = session_cls()
     send_fn = Mock()
     # user id => user name
     users = {

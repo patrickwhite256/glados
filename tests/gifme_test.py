@@ -1,8 +1,5 @@
 from plugins import gifme
 
-# i really just wanted to test the regex
-# >_>
-
 
 def test_regex_matches_good():
     test_phrases = {
@@ -11,7 +8,8 @@ def test_regex_matches_good():
         'glados, giff me something': 'something',
         'glados giff me something else': 'something else',
         'glados giff no me': 'no me',
-        'glados  gif   me   people who suck at spacing': 'people who suck at spacing',
+        'glados  gif   me   people who suck at spacing':
+            'people who suck at spacing',
         'glados gif me': 'me',
         'GLaDOS gif me case insensitivity': 'case insensitivity'
     }

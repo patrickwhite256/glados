@@ -64,9 +64,13 @@ class GladosClient(WebSocketClient):
                 continue
             self.channels[channel['id']] = channel['name']
             if debug:
-                log_file_name = DEBUG_LOG_FILE_TEMPLATE.format(channel=channel['name'], date=date)
+                log_file_name = DEBUG_LOG_FILE_TEMPLATE.format(
+                    channel=channel['name'], date=date
+                )
             else:
-                log_file_name = LOG_FILE_TEMPLATE.format(channel=channel['name'], date=date)
+                log_file_name = LOG_FILE_TEMPLATE.format(
+                    channel=channel['name'], date=date
+                )
             try:
                 os.makedirs(os.path.dirname(log_file_name))
             except:
@@ -85,7 +89,7 @@ class GladosClient(WebSocketClient):
         self.load_plugins()
         self.init_memory()
         self.init_plugins()
-        return super().__init__(url, **kwargs)
+        super().__init__(url, **kwargs)
 
     def opened(self):
         if self.debug:
@@ -93,7 +97,9 @@ class GladosClient(WebSocketClient):
 
     def received_message(self, m):
         msg = json.loads(str(m))
-        if 'channel' in msg and 'message' not in msg and msg['type'] == 'message':
+        if 'channel' in msg \
+           and 'message' not in msg \
+           and msg['type'] == 'message':
             self.log_message(msg['text'], msg['user'], msg['channel'])
         if self.debug:
             print(m)
@@ -117,6 +123,7 @@ class GladosClient(WebSocketClient):
                     plugin.handle_message(msg)
                     if plugin.consumes_message:
                         return
+            # pylint: disable=bare-except
             except:
                 print_exc()
                 # TODO: reload that plugin
@@ -133,8 +140,8 @@ class GladosClient(WebSocketClient):
     def init_memory(self):
         engine = sqlalchemy.create_engine('sqlite:///memory.db')
         Base.metadata.create_all(engine)
-        Session = sessionmaker(engine)
-        self.session = Session()
+        session_cls = sessionmaker(engine)
+        self.session = session_cls()
 
     def load_plugins(self):
         try:
@@ -144,7 +151,9 @@ class GladosClient(WebSocketClient):
             print('Could not load plugins: file not found.')
             return
         except ValueError as e:
-            print('Could not load plugins: malformed JSON:\n{0}'.format(e.args[0]))
+            print('Could not load plugins: malformed JSON:\n{0}'.format(
+                e.args[0]
+            ))
         for module_name, class_dict in plugins_dict.items():
             try:
                 module = import_module('plugins.{}'.format(module_name))
@@ -154,7 +163,9 @@ class GladosClient(WebSocketClient):
                     'type': class_dict['plugin_type']
                 })
             except ImportError as e:
-                print('Problem loading plugin {}:\n{}'.format(class_dict['plugin_class'], e))
+                print('Problem loading plugin {}:\n{}'.format(
+                    class_dict['plugin_class'], e
+                ))
 
     def init_plugins(self):
         for plugin_data in self.plugin_metadata:
@@ -178,8 +189,11 @@ class GladosClient(WebSocketClient):
                         self.session,
                         self.post_general
                     )
+            # pylint: disable=broad-except
             except Exception as e:
-                print('Problem initializing plugin {}:\n{}'.format(plugin_class.__name__, e))
+                print('Problem initializing plugin {}:\n{}'.format(
+                    plugin_class.__name__, e
+                ))
         for plugin in self.plugins + list(self.async_plugins.values()):
             plugin.setup()
 
@@ -222,7 +236,8 @@ class GladosClient(WebSocketClient):
         }
         if attachments is not None:
             attachments_json = json.dumps(attachments)
-            self.log_message(message + '|' + attachments[0]['fallback'], self.bot_id, channel)
+            self.log_message(message + '|' + attachments[0]['fallback'],
+                             self.bot_id, channel)
             data['attachments'] = attachments_json
         else:
             self.log_message(message, self.bot_id, channel)
@@ -249,12 +264,15 @@ class GladosClient(WebSocketClient):
 
 
 # For debugging
-if __name__ == '__main__':
+def main():
     try:
         token_file = open('.slack-token')
         token = token_file.read().strip()
-        ws = GladosClient(token, debug=True)
-        ws.connect()
-        ws.run_forever()
+        client = GladosClient(token, debug=True)
+        client.connect()
+        client.run_forever()
     except KeyboardInterrupt:
-        ws.close()
+        client.close()
+
+if __name__ == '__main__':
+    main()
