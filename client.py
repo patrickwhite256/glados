@@ -3,6 +3,7 @@
 import datetime
 import json
 import os
+import re
 from importlib import import_module
 from traceback import print_exc
 
@@ -23,6 +24,19 @@ DEBUG_CHANNEL_NAME = 'aperture-science'
 LOG_FILE_TEMPLATE = '/var/log/glados/{channel}/{date}.log'
 DEBUG_LOG_FILE_TEMPLATE = '/tmp/glados/{channel}/{date}.log'
 LOG_ENTRY_TEMPLATE = '[{time}] {name}: {message}'
+
+PLUGIN_HELP_RE = re.compile(r'glados,? help .*')
+HELP_RE = re.compile(r'glados,? help')
+
+HELP_TEXT = '''
+Hello. I am GLaDOS (Genetic Lifeform and Disk Operating System).
+I run a number of plugins for this slack.
+Here are all the plugins I currently have installed:
+{}
+You can ask for help with a specific plugin by saying "glados help PLUGIN_NAME"
+
+Contribute to my development at http://github.com/patrickwhite256/glados
+'''.strip()
 
 
 class GladosClient(WebSocketClient):
@@ -88,6 +102,11 @@ class GladosClient(WebSocketClient):
         else:
             if 'channel' in msg and msg['channel'] == self.debug_channel:
                 return
+        if 'channel' in msg and \
+           'message' not in msg and \
+           msg['type'] == 'message' and \
+           self.handle_help_message(msg['text'], msg['channel']):
+            return
         if 'user' in msg and msg['user'] in self.bot_users:
             return
         if 'ok' in msg:
@@ -144,14 +163,16 @@ class GladosClient(WebSocketClient):
             try:
                 if plugin_data['type'] == 'normal':
                     # TODO: a more elegant way of passing data to plugins
-                    self.plugins.append(plugin_class(
+                    plugin = plugin_class(
                         self.session,
                         self.post_message,
                         react_to_message=self.react_to_message,
                         debug=self.debug,
                         users=self.users,
                         channels=self.channels
-                    ))
+                    )
+                    plugin.get_help_text()  # make sure plugin has help text
+                    self.plugins.append(plugin)
                 elif plugin_data['type'] == 'async':
                     self.async_plugins[plugin_name] = plugin_class(
                         self.session,
@@ -174,8 +195,24 @@ class GladosClient(WebSocketClient):
         ))
         log_file.flush()
 
-    def post_message(self, message, channel, attachments=None,
-                     link_names=True, as_user=True):
+    def handle_help_message(self, message, channel):
+        match = PLUGIN_HELP_RE.match(message)
+        if match:
+            plugin_name = match.group(1)
+            for plugin in self.plugins:
+                if plugin.plugin_name == plugin_name:
+                    self.post_message(plugin.help_text, channel)
+                    return True
+            self.post_message('No plugin of that name installed.', channel)
+            return True
+        if HELP_RE.match(message):
+            plugin_list = '\n'.join([_.plugin_name for _ in self.plugins])
+            help_text = HELP_TEXT.format(plugin_list)
+            self.post(help_text, channel)
+            return True
+        return False
+
+    def post_message(self, message, channel, attachments=None, as_user=True):
         # TODO: add default channel
         data = {
             'token': self.token,
@@ -183,8 +220,6 @@ class GladosClient(WebSocketClient):
             'text': message,
             'as_user': as_user
         }
-        if link_names:
-            data['link_names'] = 1
         if attachments is not None:
             attachments_json = json.dumps(attachments)
             self.log_message(message + '|' + attachments[0]['fallback'], self.bot_id, channel)
