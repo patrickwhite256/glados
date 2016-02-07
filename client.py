@@ -229,13 +229,17 @@ class GladosClient(WebSocketClient):
             return True
         return False
 
-    def post_message(self, message, channel, attachments=None, as_user=True):
+    def post_message(self, message, channel, attachments=None, as_user=True,
+                     unfurl=True):
         # TODO: add default channel
         data = {
             'token': self.token,
             'channel': channel,
             'text': message,
-            'as_user': as_user
+            'as_user': as_user,
+            'link_names': 1,
+            'unfurl_links': unfurl,
+            'unfurl_media': unfurl
         }
         if attachments is not None:
             attachments_json = json.dumps(attachments)
