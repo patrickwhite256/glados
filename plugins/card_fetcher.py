@@ -16,8 +16,11 @@ oracle_re = re.compile(r'.*?{{(.+?)}}')
 # $$cardname$$ fetches the price of the card
 price_re = re.compile(r'.*?\$\$(.+?)\$\$')
 
-HELP_TEXT = 'Joel needs to write this'
-
+HELP_TEXT = '''
+[[cardname]] searches for card images
+{{cardname}} searches for card oracle text
+$$cardname$$ searches for card pricing information according to MTGStocks.com
+'''
 
 class CardFetcher(GladosPluginBase):
     consumes_message = True
@@ -140,7 +143,7 @@ class CardFetcher(GladosPluginBase):
                  
             
             attachments = [card_attachment] 
-            self.send(MTGSTOCKS_LINK_TPL.format(card_obj['link'], match), msg['channel'], attachments)
+            self.send(MTGSTOCKS_LINK_TPL.format(card_obj['link'], match), msg['channel'], attachments, unfurl=False)
 
     @property
     def help_text(self):
