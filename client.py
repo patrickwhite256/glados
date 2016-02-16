@@ -6,6 +6,7 @@ import os
 import re
 import time
 from importlib import import_module
+from queue import Queue
 from threading import Thread
 from traceback import print_exc
 
@@ -32,6 +33,11 @@ LOG_ENTRY_TEMPLATE = '[{time}] {name}: {message}'
 PLUGIN_HELP_RE = re.compile(r'glados,? help (.*)', re.I)
 HELP_RE = re.compile(r'glados,? help', re.I)
 
+MSG_TYPE_TIMER = 1
+MSG_TYPE_MESSAGE = 2
+MSG_TYPE_CLOSED = 3
+MSG_TYPE_TERMINATE = 4
+
 HELP_TEXT = '''
 Hello. I am GLaDOS (Genetic Lifeform and Disk Operating System).
 I run a number of plugins for this slack.
@@ -43,8 +49,11 @@ Contribute to my development at http://github.com/patrickwhite256/glados
 '''.strip()
 
 
-class GladosClient(WebSocketClient):
-    def __init__(self, slack_token, debug=False, **kwargs):
+class GladosClient:
+    def __init__(self, slack_token, debug=False):
+        self.interval_thread = None
+        self.socket_thread = None
+
         self.bot_users = []
         self.users = {}
         self.channels = {}
@@ -56,7 +65,7 @@ class GladosClient(WebSocketClient):
 
         date = datetime.date.today().strftime('%Y-%m-%d')
         wsdata = requests.get(SLACK_RTM_START_URL.format(slack_token)).json()
-        url = wsdata['url']
+        self.slack_url = wsdata['url']
         for user in wsdata['users']:
             if user['is_bot']:
                 self.bot_users.append(user['id'])
@@ -94,26 +103,30 @@ class GladosClient(WebSocketClient):
         self.load_plugins()
         self.init_memory()
         self.init_plugins()
-        super().__init__(url, **kwargs)
 
-        # if it's stupid and it works, it's not stupid
-        interval_thread = IntervalThread(self)
-        interval_thread.start()
-        # no but really this is stupid.
-        # TODO: run the timer in a thread-safe way
+    def run(self):
+        queue = Queue()
+        self.interval_thread = IntervalThread(queue)
+        self.interval_thread.start()
+        self.socket_thread = GladosWSClient(self.slack_url, queue, self.debug)
+        self.socket_thread.start()
+        while True:
+            message = queue.get()
+            if message['type'] == MSG_TYPE_TIMER:
+                self.run_timed_plugins()
+            elif message['type'] == MSG_TYPE_CLOSED:
+                self.close()
+            elif message['type'] == MSG_TYPE_MESSAGE:
+                self.handle_message(message['msg'])
 
-    def opened(self):
-        if self.debug:
-            print('Hello!')
-
-    def received_message(self, m):
-        msg = json.loads(str(m))
+    def handle_message(self, message):
+        msg = json.loads(message)
         if 'channel' in msg \
            and 'message' not in msg \
            and msg['type'] == 'message':
             self.log_message(msg['text'], msg['user'], msg['channel'])
         if self.debug:
-            print(m)
+            print(message)
             if 'channel' in msg and msg['channel'] != self.debug_channel:
                 return
         else:
@@ -139,14 +152,20 @@ class GladosClient(WebSocketClient):
                 print_exc()
                 # TODO: reload that plugin
 
-    def closed(self, code, reason=None):
+    def close(self):
         self.session.commit()
         for plugin in self.plugins + list(self.async_plugins.values()):
             plugin.teardown()
-        if self.debug:
-            print('You monster')
         for log_file in self.log_files.values():
             log_file.close()
+        print('Stopping threads...')
+        self.interval_thread.stop()
+        self.interval_thread.join()
+        if self.socket_thread.is_alive():
+            self.socket_thread.stop()
+            self.socket_thread.join()
+        if self.debug:
+            print('You monster')
 
     def init_memory(self):
         engine = sqlalchemy.create_engine('sqlite:///memory.db')
@@ -198,7 +217,7 @@ class GladosClient(WebSocketClient):
                     text = getattr(plugin, 'help_text')
                     if not isinstance(text, str):
                         raise AttributeError('help_text must be a string')
-                    start_time = time.time()
+                    start_time = datetime.datetime.now()
                     if isinstance(plugin, TimedPluginBase):
                         interval = getattr(plugin, 'interval')
                         if not isinstance(interval, str):
@@ -300,15 +319,56 @@ class GladosClient(WebSocketClient):
                 plugin.last_run_time = now
 
 
-class IntervalThread(Thread):
-    def __init__(self, client):
-        self.client = client
+class GladosWSClient(Thread):
+    class WSClient(WebSocketClient):
+        def __init__(self, slack_url, queue, debug):
+            self.debug = debug
+            self.queue = queue
+            super().__init__(slack_url)
+            self.running = True
+
+        def opened(self):
+            if self.debug:
+                print('Hello!')
+
+        def received_message(self, message):
+            self.queue.put({'type': MSG_TYPE_MESSAGE, 'msg': str(message)})
+
+        def closed(self, code, reason=None):
+            if self.running:
+                self.queue.put({'type': MSG_TYPE_CLOSED})
+
+    def __init__(self, slack_url, queue, debug):
+        self.client = self.WSClient(slack_url, queue, debug)
         super().__init__()
 
     def run(self):
-        while True:
-            time.sleep(60)
-            self.client.run_timed_plugins()
+        self.client.connect()
+        self.client.run_forever()
+
+    def stop(self):
+        self.client.running = False
+        self.client.close()
+
+
+class IntervalThread(Thread):
+    def __init__(self, queue):
+        self.queue = queue
+        self.running = True
+        super().__init__()
+
+    def run(self):
+        count = 0
+        while self.running:
+            # sleeps in 1 second intervals so it can be stopped in a short time
+            count += 1
+            if count == 60:
+                count = 0
+                self.queue.put({'type': MSG_TYPE_TIMER})
+            time.sleep(1)
+
+    def stop(self):
+        self.running = False
 
 
 # For debugging
@@ -317,8 +377,7 @@ def main():
         token_file = open('.slack-token')
         token = token_file.read().strip()
         client = GladosClient(token, debug=True)
-        client.connect()
-        client.run_forever()
+        client.run()
     except KeyboardInterrupt:
         client.close()
 

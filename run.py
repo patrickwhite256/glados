@@ -65,9 +65,11 @@ def main():
     socket_process = Process(target=handle_socket_connections,
                              args=(gclient, sock))
     socket_process.start()
-    gclient.connect()
-    gclient.run_forever()
-    # if it gets past here it's crashed
+    try:
+        gclient.run()
+        # if it gets past here it's crashed
+    finally:
+        gclient.close()
 
     socket_process.terminate()
 

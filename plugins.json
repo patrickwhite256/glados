@@ -42,9 +42,5 @@
     "khaled": {
         "plugin_class": "Khaled",
         "plugin_type": "normal"
-    },
-    "annoy": {
-        "plugin_class": "Annoying",
-        "plugin_type": "normal"
     }
 }
