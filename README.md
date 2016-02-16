@@ -16,11 +16,10 @@ Plugin methods that have a defined meaning are documented in `plugin_base.py`
 
 Plugins are configured in the `plugins.json` file. For now each plugin is only defined by the file name and the plugin class, but other things may be added in the future.
 
-New! Async plugins
+New! Timed plugins
 ------------------
-Now available: async plugins that accept messages to a unix socket and generate messages based on what they receive.
-Example usage: reminder plugin that accepts messages from a cron job (see the PDreminder job).
-Currently only have the ability to send to the general channel.
+Timed plugins allows you to run something at an interval specified by cron syntax.
+These were the original intention of async plugins, and async plugins will probably be deprecated soon.
 
 Developing
 ----------

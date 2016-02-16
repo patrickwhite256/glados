@@ -5,3 +5,4 @@ pyflakes==0.8.1
 requests==2.7.0
 SQLAlchemy==1.0.4
 ws4py==0.3.4
+croniter==0.3.11

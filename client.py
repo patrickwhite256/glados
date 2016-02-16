@@ -4,15 +4,19 @@ import datetime
 import json
 import os
 import re
+import time
 from importlib import import_module
+from threading import Thread
 from traceback import print_exc
 
 import requests
 import sqlalchemy
+from croniter import croniter
 from sqlalchemy.orm import sessionmaker
 from ws4py.client.threadedclient import WebSocketClient
 
 from plugin_base import DeclarativeBase as Base
+from plugin_base import TimedPluginBase
 
 SLACK_RTM_START_URL = 'https://slack.com/api/rtm.start?token={}'
 SLACK_POST_MESSAGE_URL = 'https://slack.com/api/chat.postMessage'
@@ -41,16 +45,16 @@ Contribute to my development at http://github.com/patrickwhite256/glados
 
 class GladosClient(WebSocketClient):
     def __init__(self, slack_token, debug=False, **kwargs):
-        self.debug = False
         self.bot_users = []
         self.users = {}
         self.channels = {}
         self.debug_channel = None
         self.general_channel = None
         self.async_plugins = {}
-        date = datetime.date.today().strftime('%Y-%m-%d')
         self.debug = debug
         self.token = slack_token
+
+        date = datetime.date.today().strftime('%Y-%m-%d')
         wsdata = requests.get(SLACK_RTM_START_URL.format(slack_token)).json()
         url = wsdata['url']
         for user in wsdata['users']:
@@ -86,10 +90,17 @@ class GladosClient(WebSocketClient):
 
         self.plugin_metadata = []
         self.plugins = []
+        self.timed_plugins = []
         self.load_plugins()
         self.init_memory()
         self.init_plugins()
         super().__init__(url, **kwargs)
+
+        # if it's stupid and it works, it's not stupid
+        interval_thread = IntervalThread(self)
+        interval_thread.start()
+        # no but really this is stupid.
+        # TODO: run the timer in a thread-safe way
 
     def opened(self):
         if self.debug:
@@ -154,6 +165,7 @@ class GladosClient(WebSocketClient):
             print('Could not load plugins: malformed JSON:\n{0}'.format(
                 e.args[0]
             ))
+            return
         for module_name, class_dict in plugins_dict.items():
             try:
                 module = import_module('plugins.{}'.format(module_name))
@@ -185,7 +197,14 @@ class GladosClient(WebSocketClient):
                     # make sure plugin has help text
                     text = getattr(plugin, 'help_text')
                     if not isinstance(text, str):
-                        raise AttributeError('help_text must be a property')
+                        raise AttributeError('help_text must be a string')
+                    start_time = time.time()
+                    if isinstance(plugin, TimedPluginBase):
+                        interval = getattr(plugin, 'interval')
+                        if not isinstance(interval, str):
+                            raise AttributeError('interval must be a string')
+                        plugin.last_run_time = start_time
+                        self.timed_plugins.append(plugin)
                     self.plugins.append(plugin)
                 elif plugin_data['type'] == 'async':
                     self.async_plugins[plugin_name] = plugin_class(
@@ -197,6 +216,7 @@ class GladosClient(WebSocketClient):
                 print('Problem initializing plugin {}:\n{}'.format(
                     plugin_class.__name__, e
                 ))
+
         for plugin in self.plugins + list(self.async_plugins.values()):
             plugin.setup()
 
@@ -231,7 +251,6 @@ class GladosClient(WebSocketClient):
 
     def post_message(self, message, channel, attachments=None, as_user=True,
                      unfurl=True):
-        # TODO: add default channel
         data = {
             'token': self.token,
             'channel': channel,
@@ -268,6 +287,28 @@ class GladosClient(WebSocketClient):
 
     def handle_async(self, plugin, data):
         self.async_plugins[plugin].handle_message(data)
+
+    def run_timed_plugins(self):
+        now = datetime.datetime.now().replace(second=0, microsecond=0)
+
+        for plugin in self.timed_plugins:
+            time_iter = croniter(plugin.interval, plugin.last_run_time)
+            next_time = time_iter.get_next(datetime.datetime).replace(
+                second=0, microsecond=0)
+            if next_time <= now:
+                plugin.run_timed_event()
+                plugin.last_run_time = now
+
+
+class IntervalThread(Thread):
+    def __init__(self, client):
+        self.client = client
+        super().__init__()
+
+    def run(self):
+        while True:
+            time.sleep(60)
+            self.client.run_timed_plugins()
 
 
 # For debugging
