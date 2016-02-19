@@ -1,50 +1,38 @@
 {
     "what_is": {
-        "plugin_class":"WhatIs",
-        "plugin_type": "normal"
+        "plugin_class":"WhatIs"
     },
     "alive": {
-        "plugin_class":"IAmAlive",
-        "plugin_type": "normal"
+        "plugin_class":"IAmAlive"
     },
     "hipster": {
-        "plugin_class":"BeHipster",
-        "plugin_type": "normal"
+        "plugin_class":"BeHipster"
     },
     "card_fetcher": {
-        "plugin_class": "CardFetcher",
-        "plugin_type": "normal"
+        "plugin_class": "CardFetcher"
     },
     "karma": {
-        "plugin_class": "Karmator",
-        "plugin_type": "normal"
+        "plugin_class": "Karmator"
     },
     "urban": {
-        "plugin_class": "UrbanMe",
-        "plugin_type": "normal"
+        "plugin_class": "UrbanMe"
     },
     "pd_reminder": {
-        "plugin_class": "PDReminder",
-        "plugin_type": "async"
+        "plugin_class": "PDReminder"
     },
     "gifme": {
-        "plugin_class": "GifMe",
-        "plugin_type": "normal"
+        "plugin_class": "GifMe"
     },
     "lmao": {
-        "plugin_class": "AyyLmao",
-        "plugin_type": "normal"
+        "plugin_class": "AyyLmao"
     },
     "groups": {
-        "plugin_class": "Groups",
-        "plugin_type": "normal"
+        "plugin_class": "Groups"
     },
     "khaled": {
-        "plugin_class": "Khaled",
-        "plugin_type": "normal"
+        "plugin_class": "Khaled"
     },
     "remind": {
-        "plugin_class": "RemindMe",
-        "plugin_type": "normal"
+        "plugin_class": "RemindMe"
     }
 }

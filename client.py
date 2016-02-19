@@ -59,7 +59,6 @@ class GladosClient:
         self.channels = {}
         self.debug_channel = None
         self.general_channel = None
-        self.async_plugins = {}
         self.debug = debug
         self.token = slack_token
 
@@ -154,7 +153,7 @@ class GladosClient:
 
     def close(self):
         self.session.commit()
-        for plugin in self.plugins + list(self.async_plugins.values()):
+        for plugin in self.plugins:
             plugin.teardown()
         for log_file in self.log_files.values():
             log_file.close()
@@ -190,8 +189,7 @@ class GladosClient:
                 module = import_module('plugins.{}'.format(module_name))
                 self.plugin_metadata.append({
                     'name': class_dict['plugin_class'],
-                    'class': getattr(module, class_dict['plugin_class']),
-                    'type': class_dict['plugin_type']
+                    'class': getattr(module, class_dict['plugin_class'])
                 })
             except ImportError as e:
                 print('Problem loading plugin {}:\n{}'.format(
@@ -201,42 +199,35 @@ class GladosClient:
     def init_plugins(self):
         for plugin_data in self.plugin_metadata:
             plugin_class = plugin_data['class']
-            plugin_name = plugin_data['name']
             try:
-                if plugin_data['type'] == 'normal':
-                    # TODO: a more elegant way of passing data to plugins
-                    plugin = plugin_class(
-                        self.session,
-                        self.post_message,
-                        react_to_message=self.react_to_message,
-                        debug=self.debug,
-                        users=self.users,
-                        channels=self.channels
-                    )
-                    # make sure plugin has help text
-                    text = getattr(plugin, 'help_text')
-                    if not isinstance(text, str):
-                        raise AttributeError('help_text must be a string')
-                    start_time = datetime.datetime.now()
-                    if isinstance(plugin, TimedPluginBase):
-                        interval = getattr(plugin, 'interval')
-                        if not isinstance(interval, str):
-                            raise AttributeError('interval must be a string')
-                        plugin.last_run_time = start_time
-                        self.timed_plugins.append(plugin)
-                    self.plugins.append(plugin)
-                elif plugin_data['type'] == 'async':
-                    self.async_plugins[plugin_name] = plugin_class(
-                        self.session,
-                        self.post_general
-                    )
+                # TODO: a more elegant way of passing data to plugins
+                plugin = plugin_class(
+                    self.session,
+                    self.post_message,
+                    react_to_message=self.react_to_message,
+                    debug=self.debug,
+                    users=self.users,
+                    channels=self.channels
+                )
+                # make sure plugin has help text
+                text = getattr(plugin, 'help_text')
+                if not isinstance(text, str):
+                    raise AttributeError('help_text must be a string')
+                start_time = datetime.datetime.now()
+                if isinstance(plugin, TimedPluginBase):
+                    interval = getattr(plugin, 'interval')
+                    if not isinstance(interval, str):
+                        raise AttributeError('interval must be a string')
+                    plugin.last_run_time = start_time
+                    self.timed_plugins.append(plugin)
+                self.plugins.append(plugin)
             # pylint: disable=broad-except
             except Exception as e:
                 print('Problem initializing plugin {}:\n{}'.format(
                     plugin_class.__name__, e
                 ))
 
-        for plugin in self.plugins + list(self.async_plugins.values()):
+        for plugin in self.plugins:
             plugin.setup()
 
     def log_message(self, message, user_id, channel_id):
@@ -303,9 +294,6 @@ class GladosClient:
 
     def post_general(self, message):
         self.post_message(message, self.general_channel)
-
-    def handle_async(self, plugin, data):
-        self.async_plugins[plugin].handle_message(data)
 
     def run_timed_plugins(self):
         now = datetime.datetime.now().replace(second=0, microsecond=0)
