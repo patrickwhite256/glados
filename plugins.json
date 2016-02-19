@@ -42,5 +42,9 @@
     "khaled": {
         "plugin_class": "Khaled",
         "plugin_type": "normal"
+    },
+    "remind": {
+        "plugin_class": "RemindMe",
+        "plugin_type": "normal"
     }
 }
