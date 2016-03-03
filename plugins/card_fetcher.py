@@ -100,7 +100,7 @@ class CardFetcher(GladosPluginBase):
             self.send('', msg['channel'], attachments)
 
         for match in pricing_matches:
-            args = match.split(':')
+            args = match.split(':')[:2]
             card_obj = get_card_price(*args)
 
             if not card_obj:
