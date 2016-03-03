@@ -101,7 +101,6 @@ class CardFetcher(GladosPluginBase):
 
         for match in pricing_matches:
             args = match.split(':')
-            print(args)
             card_obj = get_card_price(*args)
 
             if not card_obj:
