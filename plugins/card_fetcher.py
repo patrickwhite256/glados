@@ -20,6 +20,7 @@ HELP_TEXT = '''
 [[cardname]] searches for card images
 {{cardname}} searches for card oracle text
 $$cardname$$ searches for card pricing information according to MTGStocks.com
+$$cardname:setname$$ will find a price for a specific printing
 '''
 
 class CardFetcher(GladosPluginBase):
@@ -99,15 +100,15 @@ class CardFetcher(GladosPluginBase):
             self.send('', msg['channel'], attachments)
 
         for match in pricing_matches:
-
-            card_obj = get_card_price(match)
+            args = match.split(':')[:2]
+            card_obj = get_card_price(*args)
 
             if not card_obj:
                 self.send(CARD_NOT_FOUND_ERR_TPL.format(match), msg['channel'])
                 continue
 
             prices = card_obj['prices']
-            
+
             card_attachment = {
                 'fallback': card_obj['name'],
                 'title': card_obj['name'],
@@ -115,7 +116,7 @@ class CardFetcher(GladosPluginBase):
                     {
                         'title': 'Set',
                         'value': card_obj['set'],
-                        'short': True 
+                        'short': True
                     },
                     {
                         'title': 'Average',
@@ -140,9 +141,9 @@ class CardFetcher(GladosPluginBase):
                         }
                     ]
                 )
-                 
-            
-            attachments = [card_attachment] 
+
+
+            attachments = [card_attachment]
             self.send(MTGSTOCKS_LINK_TPL.format(card_obj['link'], match), msg['channel'], attachments, unfurl=False)
 
     @property
@@ -174,7 +175,7 @@ def get_card_obj(cardname):
 
     query_url = 'https://api.deckbrew.com/mtg/cards?name={}'.format(cardname)
     r = requests.get(query_url)
-    
+
     if (r.status_code != requests.codes.ok) or (not r.json()):
         return None
 
@@ -201,10 +202,15 @@ def get_card_obj(cardname):
     return formatted_json
 
 
-def get_card_price(cardname):
-    query_url = 'http://mtg-price-fetcher.us-west-1.elasticbeanstalk.com/cards/{}'.format(cardname)
-    r = requests.get(query_url)
-    
+def get_card_price(cardname, setname=None):
+    query_url = 'http://mtg-price-fetcher.us-west-1.elasticbeanstalk.com/cards'
+    params = {'name': cardname }
+
+    if (setname):
+        params['set'] = setname
+
+    r = requests.get(query_url, params)
+
     if (r.status_code != requests.codes.ok) or (not r.json()):
         return None
 
