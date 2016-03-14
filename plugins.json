@@ -20,9 +20,6 @@
     "pd_reminder": {
         "plugin_class": "PDReminder"
     },
-    "gifme": {
-        "plugin_class": "GifMe"
-    },
     "lmao": {
         "plugin_class": "AyyLmao"
     },
