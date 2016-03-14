@@ -71,11 +71,12 @@ class GifMe(GladosPluginBase):
             send_fail_msg()
             return
 
-        img_url = random.choice(filtered_images[0:5])['link']
+        image_data = random.choice(filtered_images)
 
         attachments = [{
             'fallback': '[inline image]',
-            'image_url': img_url
+            'title': image_data['title'],
+            'image_url': image_data['link']
         }]
 
         self.send('', msg['channel'], attachments)
