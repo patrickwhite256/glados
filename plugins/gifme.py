@@ -71,7 +71,7 @@ class GifMe(GladosPluginBase):
             send_fail_msg()
             return
 
-        image_data = random.choice(filtered_images)
+        image_data = random.choice(filtered_images[0:5])
 
         attachments = [{
             'fallback': '[inline image]',
