@@ -1,15 +1,15 @@
 import random
 import re
+from urllib.parse import urlencode
 
 import requests
 
 from plugin_base import GladosPluginBase
 
-# JESUS CHRIST GIPHY IS ACTUALLY AWFUL ABORT ABORT
-# TIME TO USE IMGUR API
-GIPHY_API_URL_TPL = 'http://api.giphy.com/v1/gifs/search?q={query}&limit=10&api_key=dc6zaTOxFJmzC'
+SEARCH_URL_TPL = 'https://api.imgur.com/3/gallery/search/top.json?{0}'
+MAX_BYTES      = 1024 * 1024
 
-query_re = re.compile(r'glados,?\s+giff?(?:\s+me)?\s+(.*)', re.I)
+QUERY_RE = re.compile(r'glados,?\s+giff?(?:\s+me)?\s+(.*)', re.I)
 
 HELP_TEXT = 'I regret everything.'
 
@@ -17,33 +17,62 @@ HELP_TEXT = 'I regret everything.'
 class GifMe(GladosPluginBase):
     consumes_message = True
 
+    def setup(self):
+        with open('.imgur-client-token') as f:
+            self.client_id = f.read().strip()
+
     def can_handle_message(self, msg):
         if msg['type'] != 'message' or 'message' in msg:
             return None
-        return query_re.match(msg['text'])
+        return QUERY_RE.match(msg['text'])
 
     def handle_message(self, msg):
-        query_str = query_re.match(msg['text']).group(1)
+        query_str = QUERY_RE.match(msg['text']).group(1)
+        query_params = {
+            'q_all': query_str,
+            'q_type': 'anigif'
+        }
 
-        query_url = GIPHY_API_URL_TPL.format(query=query_str)
+        query_url = SEARCH_URL_TPL.format(urlencode(query_params))
 
-        r = requests.get(query_url)
+        headers = {
+            'Authorization': 'Client-ID {0}'.format(self.client_id)
+        }
 
-        def send_fail_msg(err=None):
+        resp = requests.get(query_url, headers=headers)
+
+        def send_fail_msg(err=None, nsfw=False):
             if err:
                 print(err)
-            self.send('No results found for "{}"'.format(query_str), msg['channel'])
+            self.send(
+                'No {1}results found for "{0}"'.format(query_str,
+                                                       'SFW ' if nsfw else ''),
+                msg['channel']
+            )
 
-        if r.status_code != requests.codes.ok:
+        if resp.status_code != requests.codes.ok:
             send_fail_msg()
             return
 
-        response = r.json()
+        response = resp.json()
         if not response['data']:
             send_fail_msg()
             return
 
-        img_url = random.choice(response['data'])['images']['downsized']['url']
+        filtered_images = [_ for _ in response['data'] if not _['nsfw']]
+        if not filtered_images:
+            send_fail_msg(nsfw=True)
+            return
+
+        filtered_images = [_ for _ in filtered_images
+                           if _.get('size', MAX_BYTES + 1) <= MAX_BYTES]
+
+        if not filtered_images:
+            send_fail_msg()
+            return
+
+        img_url = random.choice(filtered_images[0:5])['link']
+
         attachments = [{
             'fallback': '[inline image]',
             'image_url': img_url

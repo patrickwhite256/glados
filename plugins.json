@@ -31,5 +31,8 @@
     },
     "remind": {
         "plugin_class": "RemindMe"
+    },
+    "gifme": {
+        "plugin_class": "GifMe"
     }
 }
