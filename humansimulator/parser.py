@@ -26,8 +26,11 @@ def corpus_directories(corpus_dir, whitelist):
         corpus_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                    corpus_dir)
     for path in os.listdir(corpus_path):
+        dir_path = os.path.join(corpus_path, path)
+        if not os.path.isdir(dir_path):
+            continue
         if not whitelist or path in whitelist:
-            yield os.path.join(corpus_path, path)
+            yield dir_path
 
 
 def corpus_filenames(corpus_dir, whitelist=None):
