@@ -34,5 +34,8 @@
     },
     "gifme": {
         "plugin_class": "GifMe"
+    },
+    "imitator": {
+        "plugin_class": "Imitator"
     }
 }
