@@ -7,6 +7,7 @@ from collections import defaultdict
 LINE_RE   = re.compile(r'\[\d+:\d+:\d+\] (\w+): (.*)', re.I)
 UPLOAD_RE = re.compile(r'<@\w+\|\w+> uploaded a file', re.I)
 JOINED_RE = re.compile(r'<@\w+\|\w+> has joined the channel', re.I)
+PINNED_RE = re.compile(r'<@\w+\|\w+> pinned', re.I)
 LEFT_RE   = re.compile(r'<@\w+\|\w+> has left the channel', re.I)
 TOPIC_RE  = re.compile(r'<@\w+\|\w+> set the channel', re.I)
 LINK_RE   = re.compile(r'<http.*>', re.I)
