@@ -66,7 +66,7 @@ class GladosClient:
         wsdata = requests.get(SLACK_RTM_START_URL.format(slack_token)).json()
         self.slack_url = wsdata['url']
         for user in wsdata['users']:
-            if user['is_bot']:
+            if user.get('is_bot'):
                 self.bot_users.append(user['id'])
             self.users[user['id']] = user['name']
         self.bot_id = wsdata['self']['id']
