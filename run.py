@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import traceback
 
 from client import GladosClient
 
@@ -25,6 +26,9 @@ def main():
     try:
         gclient.run()
         # if it gets past here it's crashed
+    except:
+        print('FATAL ERROR')
+        traceback.print_exc()
     finally:
         gclient.close()
 
