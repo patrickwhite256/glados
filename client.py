@@ -122,17 +122,18 @@ class GladosClient:
         msg = json.loads(message)
         if self.debug:
             print(message)
-        if msg['type'] == 'message' and 'text' not in msg:
+        msg_type = msg.get('type')
+        if msg_type == 'message' and 'text' not in msg:
             # this is more trouble than it's worth handling, seriously
             return
-        if 'channel' in msg and msg['type'] == 'message':
+        if 'channel' in msg and msg_type == 'message':
             self.log_message(msg['text'], msg['user'], msg['channel'])
         if (self.debug and msg.get('channel') != self.debug_channel) or \
            (not self.debug and msg.get('channel') == self.debug_channel):
             return
         if 'channel' in msg and \
            'message' not in msg and \
-           msg['type'] == 'message' and \
+           msg_type == 'message' and \
            self.handle_help_message(msg['text'], msg['channel']):
             return
         if 'user' in msg and msg['user'] in self.bot_users:
