@@ -8,9 +8,6 @@
     "hipster": {
         "plugin_class":"BeHipster"
     },
-    "card_fetcher": {
-        "plugin_class": "CardFetcher"
-    },
     "karma": {
         "plugin_class": "Karmator"
     },
