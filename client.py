@@ -127,7 +127,7 @@ class GladosClient:
             # this is more trouble than it's worth handling, seriously
             return
         if 'channel' in msg and msg_type == 'message':
-            self.log_message(msg['text'], msg['user'], msg['channel'])
+            self.log_message(msg['text'], msg.get('user'), msg['channel'])
         if (self.debug and msg.get('channel') != self.debug_channel) or \
            (not self.debug and msg.get('channel') == self.debug_channel):
             return
@@ -237,7 +237,7 @@ class GladosClient:
             return
         log_file.write(LOG_ENTRY_TEMPLATE.format(
             time=datetime.datetime.now().strftime('%H:%M:%S'),
-            name=self.users[user_id],
+            name=self.users.get(user_id, 'BOT'),
             message=message + '\n'
         ))
         log_file.flush()
