@@ -40,5 +40,8 @@
     },
     "worthy": {
         "plugin_class": "MHRCQAMWBFW"
+    },
+    "ting": {
+        "plugin_class": "Ting"
     }
 }

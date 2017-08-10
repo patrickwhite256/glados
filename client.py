@@ -205,6 +205,7 @@ class GladosClient:
                     self.session,
                     self.post_message,
                     react_to_message=self.react_to_message,
+                    reply_to_message=self.reply_to_message,
                     debug=self.debug,
                     users=self.users,
                     channels=self.channels
@@ -289,6 +290,18 @@ class GladosClient:
             'name': reaction
         }
         response = requests.post(SLACK_ADD_REACTION_URL, data=data)
+        if self.debug:
+            print(response)
+
+    def reply_to_message(self, msg, reply_text):
+        data = {
+            'token': self.token,
+            'channel': msg['channel'],
+            'text': reply_text,
+            'thread_ts': msg.get('thread_ts') or msg['ts'],
+            'as_user': True
+        }
+        response = requests.post(SLACK_POST_MESSAGE_URL, data=data)
         if self.debug:
             print(response)
 
