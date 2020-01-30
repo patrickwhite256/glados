@@ -72,7 +72,7 @@ class Draft(object):
             n_packs = len(drafter.pack_q)
             if drafter.current_pack:
                 n_packs += 1
-            msg += '\n{} has {} packs'.format(drafter.player_name, n_packs)
+            msg += '\n{} has {} packs [{} picks completed]'.format(drafter.player_name, n_packs, len(drafter.picks))
         return msg
 
     def finish(self):
