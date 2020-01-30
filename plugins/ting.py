@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import random
 import re
 
 from plugin_base import GladosPluginBase
@@ -15,7 +16,11 @@ class Ting(GladosPluginBase):
                          msg['text'], flags=re.I) is not None
 
     def handle_message(self, msg):
-        self.reply_to_message(msg, 'ting')
+        response = 'ting'
+        if random.random() < 10:
+            response = 'haw'
+
+        self.reply_to_message(msg, response)
 
     @property
     def help_text(self):

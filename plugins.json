@@ -14,9 +14,6 @@
     "urban": {
         "plugin_class": "UrbanMe"
     },
-    "pd_reminder": {
-        "plugin_class": "PDReminder"
-    },
     "lmao": {
         "plugin_class": "AyyLmao"
     },
@@ -26,22 +23,16 @@
     "khaled": {
         "plugin_class": "Khaled"
     },
-    "remind": {
-        "plugin_class": "RemindMe"
-    },
     "gifme": {
         "plugin_class": "GifMe"
     },
     "imitator": {
         "plugin_class": "Imitator"
     },
-    "spoilers": {
-        "plugin_class": "FetchSpoilers"
-    },
-    "worthy": {
-        "plugin_class": "MHRCQAMWBFW"
-    },
     "ting": {
         "plugin_class": "Ting"
+    },
+    "draft": {
+        "plugin_class": "Drafto"
     }
 }
