@@ -32,7 +32,7 @@
     "ting": {
         "plugin_class": "Ting"
     },
-    "draft": {
-        "plugin_class": "Drafto"
+    "lor_fetcher": {
+        "plugin_class": "LoRFetcher"
     }
 }
