@@ -53,7 +53,7 @@ class LoRFetcher(GladosPluginBase):
         return self.card_searcher.get_card(carddata)
 
     def can_handle_message(self, msg):
-        if msg['type'] != 'message' or 'message' in msg and (msg['channel'] != self.channel) or (msg['channel'] != self.debug_channel):
+        if msg['type'] != 'message' or 'message' in msg and msg['channel'] != self.channel and msg['channel'] != self.debug_channel:
             return None
         return CARD_RE.match(msg['text'])
 
@@ -196,7 +196,7 @@ class CardSearcher:
         self.cards_by_name = {}
         self.cards_by_id = {}
         for fname in os.listdir(LOR_DATA_PATH):
-            with open(os.path.join(LOR_DATA_PATH, fname)) as data_file:
+            with open(os.path.join(LOR_DATA_PATH, fname), encoding='utf-8') as data_file:
                 all_cards = json.loads(data_file.read())
             for card in all_cards:
                 self.add_card(card)
