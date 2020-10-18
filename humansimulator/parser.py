@@ -2,7 +2,10 @@ import html
 import os.path
 import re
 import sys
+import time
 from collections import defaultdict
+
+MAX_AGE_S = 360*24*60*60
 
 LINE_RE   = re.compile(r'\[\d+:\d+:\d+\] (\w+): (.*)', re.I)
 UPLOAD_RE = re.compile(r'<@\w+\|\w+> uploaded a file', re.I)
@@ -38,9 +41,14 @@ def corpus_filenames(corpus_dir, whitelist=None):
     '''
     returns a generator that yields filenames of non-empty files in the corpus
     '''
+
+    now = time.time()
     for path in corpus_directories(corpus_dir, whitelist):
         for filename in os.listdir(path):
             full_path = os.path.join(path, filename)
+            stat = os.stat(full_path)
+            if stat.st_size > 0 or now - stat.st_mtime > MAX_AGE_S:
+                continue
             if os.stat(full_path).st_size > 0:
                 yield full_path
 

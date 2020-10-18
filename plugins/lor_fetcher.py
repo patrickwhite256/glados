@@ -53,8 +53,12 @@ class LoRFetcher(GladosPluginBase):
         return self.card_searcher.get_card(carddata)
 
     def can_handle_message(self, msg):
-        if msg['type'] != 'message' or 'message' in msg and msg['channel'] != self.channel and msg['channel'] != self.debug_channel:
+        if msg['type'] != 'message' or 'message' in msg:
             return None
+
+        if msg['channel'] != self.channel and msg['channel'] != self.debug_channel:
+            return None
+
         return CARD_RE.match(msg['text'])
 
     def handle_message(self, msg):
