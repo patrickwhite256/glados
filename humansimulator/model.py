@@ -73,10 +73,16 @@ class ModelSet(object):
         self.models[model.name] = model
 
     def delete_model(self, name):
-        del self.models[name]
+        try:
+            del self.models[name]
+        except KeyError:
+            pass
 
     def merge(self, first_name, second_name):
-        self.models[first_name].merge(self.models[second_name])
+        first_model = self.models.get(first_name)
+        if not first_model:
+            return
+        first_model.merge(self.models[second_name])
         del self.models[second_name]
 
     def get_sentence(self, username):

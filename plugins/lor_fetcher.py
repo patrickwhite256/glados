@@ -1,5 +1,8 @@
 #!usr/bin/env python
 
+import base64
+import binascii
+import io
 import json
 import os
 import re
@@ -11,6 +14,19 @@ LOR_DATA_PATH = 'lorcards'
 NOT_FOUND_ERR_TPL = 'No match found for {}.'
 
 CARD_RE = re.compile(r'.*?\[\[([^\]]+)\]\]')
+DECK_RE = re.compile(r'.*?\{\{([^\}]+)\}\}')
+
+LOR_DECKCODE_VERSION = 0x12
+FACTIONS = {
+    0: 'DE',
+    1: 'FR',
+    2: 'IO',
+    3: 'NX',
+    4: 'PZ',
+    5: 'SI',
+    6: 'BW',
+    9: 'MT',
+}
 
 HELP_TEXT = '''
 [[cardname]] searches for card name
@@ -56,12 +72,25 @@ class LoRFetcher(GladosPluginBase):
         if msg['type'] != 'message' or 'message' in msg:
             return None
 
-        if msg['channel'] != self.channel and msg['channel'] != self.debug_channel:
+        if msg.get('channel', 'D')[0] != 'D' and msg['channel'] != self.channel and msg['channel'] != self.debug_channel:
             return None
 
-        return CARD_RE.match(msg['text'])
+        return CARD_RE.match(msg['text']) or DECK_RE.match(msg['text'])
 
     def handle_message(self, msg):
+        deck_match = DECK_RE.match(msg['text'])
+        if deck_match:
+            deck_code = deck_match.group(1)
+            try:
+                deck = decode_decklist(deck_code)
+            except DecodeError as err:
+                self.send('Could not decode decklist: {}'.format(err.msg), msg['channel'])
+                return
+
+            self.send('', msg['channel'], decklist_attachments(deck, self.card_searcher))
+
+            return
+
         card_matches = CARD_RE.findall(msg['text'])
 
         for match in card_matches:
@@ -85,8 +114,6 @@ class LoRFetcher(GladosPluginBase):
                 'fields': fields,
                 # 'blocks': cardblock(card),
             })]
-
-            print(attachments)
 
             self.send('', msg['channel'], attachments)
 
@@ -225,6 +252,9 @@ class CardSearcher:
             cards.append(card)
         return cards
 
+    def get_card_by_id(self, card_id):
+        return self.cards_by_id[card_id]
+
     def add_card(self, card):
         self.cards_by_id[card['cardCode']] = card
         if card['type'] == 'Unit' and card['supertype'] == 'Champion' and card['levelupDescriptionRaw'] == '':
@@ -235,3 +265,115 @@ class CardSearcher:
 
 def init_cardsearcher():
     return CardSearcher()
+
+
+class DecodeError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+
+def read_varint(stream):
+    res = 0
+    while True:
+        b = stream.read(1)
+        if b == '':
+            raise DecodeError('Unexpected EOF')
+        b = ord(b)
+        val = b & 0x7f
+        res = (res << 7) + val
+        if b & 0x80 == 0:
+            break
+    return res
+
+
+def card_code(set_id, faction_id, card_n):
+    try:
+        faction_name = FACTIONS[faction_id]
+    except KeyError:
+        raise DecodeError('Unknown faction code')
+    return '{:02}{}{:03}'.format(set_id, faction_name, card_n)
+
+
+# returns a list of codes and values (e.g. ("01IO012", 3)) or throws DecodeError
+def decode_decklist(deckstr):
+    # manually pad
+    deckstr += '=' * (8 - len(deckstr) % 8)
+    try:
+        b = base64.b32decode(deckstr)
+    except binascii.Error:
+        raise DecodeError('Error parsing base 32')
+    stream = io.BytesIO(b)
+    version_data = read_varint(stream)
+    if version_data != LOR_DECKCODE_VERSION:
+        raise DecodeError('Unknown version string')
+
+    cards = []
+    for card_count in range(3, 0, -1):
+        n_sf = read_varint(stream)
+        for _ in range(n_sf):
+            n_cards = read_varint(stream)
+            set_id = read_varint(stream)
+            faction_id = read_varint(stream)
+            for _ in range(n_cards):
+                cards.append((card_code(set_id, faction_id, read_varint(stream)), card_count))
+
+    return cards
+
+
+def decklist_attachments(deck, searcher):
+    parsed_cards = {'champion': [], 'Spell': [], 'Landmark': [], 'follower': []}
+    for card_id, card_count in deck:
+        card = searcher.get_card_by_id(card_id)
+        card_txt = '[{}] {} x{}'.format(card['cost'], card['name'], card_count)
+        if card['type'] == 'Unit':
+            if card['supertype'] == 'Champion':
+                parsed_cards['champion'].append(card_txt)
+            else:
+                parsed_cards['follower'].append(card_txt)
+        else:
+            parsed_cards[card['type']].append(card_txt)
+
+    return [
+        {
+            'fallback': 'Runeterra Decklist',
+            'blocks': [
+                {
+                    'type': 'section',
+                    'fields': [
+                        {
+                            'type': 'mrkdwn',
+                            'text': '*Champions*',
+                        },
+                        {
+                            'type': 'mrkdwn',
+                            'text': '*Spells*',
+                        },
+                        {
+                            'type': 'plain_text',
+                            'text': '\n'.join(sorted(parsed_cards['champion'])),
+                        },
+                        {
+                            'type': 'plain_text',
+                            'text': '\n'.join(sorted(parsed_cards['Spell'])),
+                        },
+                        {
+                            'type': 'mrkdwn',
+                            'text': '*Landmarks*',
+                        },
+                        {
+                            'type': 'mrkdwn',
+                            'text': '*Followers*',
+                        },
+                        {
+                            'type': 'plain_text',
+                            'text': '\n'.join(sorted(parsed_cards['Landmark'])),
+                        },
+                        {
+                            'type': 'plain_text',
+                            'text': '\n'.join(sorted(parsed_cards['follower'])),
+                        },
+                    ],
+                }
+            ],
+        },
+    ]
